@@ -48,7 +48,7 @@ jobs:
       - id: get_unm_version
         name: Get the installed UNM version
         run: |
-          yarn --ignore-optional
+          yarn --ignore-optional --ignore-engines
           unm_version=$(node -e "console.log(require('./node_modules/@unblockneteasemusic/rust-napi/package.json').version)")
           echo "unmver=${unm_version}" >> $GITHUB_OUTPUT
         shell: bash
