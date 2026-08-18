@@ -45,6 +45,9 @@ export default {
       show: false,
       afterCreateAddTrackID: 0,
     },
+    importExternalPlaylistModal: {
+      show: false,
+    },
   },
   dailyTracks: [],
   lastfm: JSON.parse(localStorage.getItem('lastfm')) || {},

@@ -100,6 +100,14 @@
         <button
           v-show="currentTab === 'playlists'"
           class="tab-button"
+          @click="openImportPlaylistModal"
+          ><svg-icon icon-class="import" />{{
+            $t('library.importExternalPlaylist')
+          }}
+        </button>
+        <button
+          v-show="currentTab === 'playlists'"
+          class="tab-button"
           @click="openAddPlaylistModal"
           ><svg-icon icon-class="plus" />{{ $t('library.newPlayList') }}
         </button>
@@ -383,6 +391,17 @@ export default {
       }
       this.updateModal({
         modalName: 'newPlaylistModal',
+        key: 'show',
+        value: true,
+      });
+    },
+    openImportPlaylistModal() {
+      if (!isAccountLoggedIn()) {
+        this.showToast(locale.t('toast.needToLogin'));
+        return;
+      }
+      this.updateModal({
+        modalName: 'importExternalPlaylistModal',
         key: 'show',
         value: true,
       });
