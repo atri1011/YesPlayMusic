@@ -789,8 +789,15 @@
       <div class="footer">
         <p class="author"
           >MADE BY
-          <a href="http://github.com/qier222" target="_blank">QIER222</a></p
+          <a href="https://github.com/atri1011" target="_blank">atri1011</a></p
         >
+        <p class="upstream">
+          Forked from
+          <a href="https://github.com/qier222" target="_blank">QIER222</a> /
+          <a href="https://github.com/qier222/YesPlayMusic" target="_blank"
+            >YesPlayMusic</a
+          >
+        </p>
         <p class="version">v{{ version }}</p>
 
         <a
@@ -1762,6 +1769,14 @@ input[type='number'] {
   font-weight: 600;
   .author {
     font-size: 0.9rem;
+  }
+  .upstream {
+    font-size: 0.78rem;
+    opacity: 0.58;
+    margin-top: -8px;
+    a {
+      color: var(--color-text);
+    }
   }
   .version {
     font-size: 0.88rem;
