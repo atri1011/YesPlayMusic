@@ -86,7 +86,19 @@ module.exports = {
     // electron-builder的配置文件
     electronBuilder: {
       nodeIntegration: true,
-      externals: ['@unblockneteasemusic/server'],
+      // vue-cli-plugin-electron-builder 的 getExternals() 仅依据子包 package.json
+      // 是否缺少 main/module 字段来判定 external；@neteasecloudmusicapienhanced/api
+      // 自带 "main": "main.js"，因此默认不会被算作 external，导致它从
+      // bundled/package.json 的 dependencies 里被剥离，electron-builder 也就
+      // 不会把它打进 app.asar。运行时 background.js 执行
+      // require('@neteasecloudmusicapienhanced/api/server') 时即报
+      // "Cannot find module"。这里显式加入 externals 白名单，使其既被 webpack
+      // 视为 external（不进 bundle），又被保留到 bundled/package.json 的
+      // dependencies，最终由 electron-builder 打包进 asar。
+      externals: [
+        '@unblockneteasemusic/server',
+        '@neteasecloudmusicapienhanced/api',
+      ],
       builderOptions: {
         productName: 'YesPlayMusic',
         copyright: 'Copyright © YesPlayMusic',
