@@ -88,7 +88,7 @@ Electron 版本由 [@hawtim](https://github.com/hawtim) 和 [@qier222](https://g
 
 [![Powered by Vercel](https://www.datocms-assets.com/31049/1618983297-powered-by-vercel.svg)](https://vercel.com/?utm_source=ohmusic&utm_campaign=oss)
 
-1. 部署网易云 API，详情参见 [Binaryify/NeteaseCloudMusicApi](https://neteasecloudmusicapi.vercel.app/#/?id=%e5%ae%89%e8%a3%85)
+1. 部署网易云 API，详情参见 [NeteaseCloudMusicApiEnhanced/api-enhanced](https://neteasecloudmusicapienhanced.js.org/#/?id=安装)
    。你也可以将 API 部署到 Vercel。
 
 2. 点击本仓库右上角的 Fork，复制本仓库到你的 GitHub 账号。
@@ -119,7 +119,7 @@ Electron 版本由 [@hawtim](https://github.com/hawtim) 和 [@qier222](https://g
 
 除了部署到 Vercel，你还可以部署到自己的服务器上
 
-1. 部署网易云 API，详情参见 [Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)
+1. 部署网易云 API，详情参见 [NeteaseCloudMusicApiEnhanced/api-enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)
 2. 克隆本仓库
 
 ```sh
@@ -223,7 +223,7 @@ cd /home/runner/${REPL_SLUG}/music && yarn install && yarn run build
 
 ## :computer: 配置开发环境
 
-本项目由 [NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi) 提供 API。
+本项目由 [NeteaseCloudMusicApiEnhanced/api-enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 提供 API（原 [Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi) 已停更）。
 
 运行本项目
 
