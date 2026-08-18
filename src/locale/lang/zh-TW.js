@@ -227,10 +227,10 @@ export default {
       cookie: {
         joox: 'Joox 引擎的 Cookie',
         qq: 'QQ 引擎的 Cookie',
+        migu: '咪咕引擎的 Cookie',
         desc1: '設定說明請參見此處',
         desc2: '，留空則不進行相關設定',
       },
-      ytdl: 'YtDl 引擎要使用的 youtube-dl 執行檔',
       proxy: {
         title: '用於 UNM 的 Proxy 伺服器',
         desc1: '請求如 YouTube 音源服務時要使用的 Proxy 伺服器',

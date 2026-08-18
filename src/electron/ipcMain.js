@@ -1,5 +1,4 @@
 import { app, dialog, globalShortcut, ipcMain } from 'electron';
-import UNM from '@unblockneteasemusic/rust-napi';
 import { registerGlobalShortcut } from '@/electron/globalShortcut';
 import cloneDeep from 'lodash/cloneDeep';
 import shortcuts from '@/utils/shortcuts';
@@ -10,6 +9,63 @@ const clc = require('cli-color');
 const log = text => {
   console.log(`${clc.blueBright('[ipcMain.js]')} ${text}`);
 };
+
+const DEFAULT_UNM_SOURCES = ['kugou', 'bodian', 'migu', 'ytdlp'];
+const UNM_SOURCE_ALIASES = {
+  ytdl: 'youtubedl',
+  pyncm: 'pyncmd',
+};
+const SUPPORTED_UNM_SOURCES = new Set([
+  'qq',
+  'kugou',
+  'kuwo',
+  'bodian',
+  'migu',
+  'joox',
+  'youtube',
+  'youtubedl',
+  'ytdlp',
+  'bilibili',
+  'bilivideo',
+  'pyncmd',
+]);
+
+let unblockMatch;
+
+function getUnblockMatch() {
+  if (!unblockMatch) {
+    unblockMatch = require('@unblockneteasemusic/server');
+  }
+  return unblockMatch;
+}
+
+function configureUnblockMusic(settings) {
+  const cookies = {
+    joox: settings.jooxCookie || '',
+    qq: settings.qqCookie || '',
+    migu: settings.miguCookie || '',
+  };
+
+  process.env.ENABLE_FLAC = settings.enableFlac === true ? 'true' : 'false';
+  process.env.JOOX_COOKIE = cookies.joox;
+  process.env.QQ_COOKIE = cookies.qq;
+  process.env.MIGU_COOKIE = cookies.migu;
+
+  if (settings.searchMode === 'order-first') {
+    process.env.FOLLOW_SOURCE_ORDER = 'true';
+  } else {
+    delete process.env.FOLLOW_SOURCE_ORDER;
+  }
+
+  // ENABLE_FLAC 通过 select 模块的导出属性实时读取，
+  // qq/migu provider 直接引用 select.ENABLE_FLAC，故此处赋值即可生效。
+  require('@unblockneteasemusic/server/src/provider/select').ENABLE_FLAC =
+    settings.enableFlac === true;
+
+  // 注意：joox/qq/migu 的 cookie 在 provider 模块加载时从 process.env 读取。
+  // 由于 webpack 将 @unblockneteasemusic/server 标记为 external，无法在运行时
+  // 通过 require 重新加载子路径模块来刷新 cookie。因此 cookie 变更需要重启应用才生效。
+}
 
 const exitAsk = (e, win) => {
   e.preventDefault(); //阻止默认行为
@@ -74,56 +130,18 @@ const exitAskWithoutMac = (e, win) => {
 const client = require('discord-rich-presence')('818936529484906596');
 
 /**
- * Make data a Buffer.
- *
- * @param {?} data The data to convert.
- * @returns {import("buffer").Buffer} The converted data.
- */
-function toBuffer(data) {
-  if (data instanceof Buffer) {
-    return data;
-  } else {
-    return Buffer.from(data);
-  }
-}
-
-/**
- * Get the file base64 data from bilivideo.
- *
- * @param {string} url The URL to fetch.
- * @returns {Promise<string>} The file base64 data.
- */
-async function getBiliVideoFile(url) {
-  const axios = await import('axios').then(m => m.default);
-  const response = await axios.get(url, {
-    headers: {
-      Referer: 'https://www.bilibili.com/',
-      'User-Agent': 'okhttp/3.4.1',
-    },
-    responseType: 'arraybuffer',
-  });
-
-  const buffer = toBuffer(response.data);
-  const encodedData = buffer.toString('base64');
-
-  return encodedData;
-}
-
-/**
  * Parse the source string (`a, b`) to source list `['a', 'b']`.
  *
- * @param {import("@unblockneteasemusic/rust-napi").Executor} executor
  * @param {string} sourceString The source string.
  * @returns {string[]} The source list.
  */
-function parseSourceStringToList(executor, sourceString) {
-  const availableSource = executor.list();
-
+function parseSourceStringToList(sourceString) {
   return sourceString
     .split(',')
     .map(s => s.trim().toLowerCase())
+    .map(s => UNM_SOURCE_ALIASES[s] || s)
     .filter(s => {
-      const isAvailable = availableSource.includes(s);
+      const isAvailable = SUPPORTED_UNM_SOURCES.has(s);
 
       if (!isAvailable) {
         log(`This source is not one of the supported source: ${s}`);
@@ -134,10 +152,6 @@ function parseSourceStringToList(executor, sourceString) {
 }
 
 export function initIpcMain(win, store, trayEventEmitter) {
-  // WIP: Do not enable logging as it has some issues in non-blocking I/O environment.
-  // UNM.enableLogging(UNM.LoggingType.ConsoleEnv);
-  const unmExecutor = new UNM.Executor();
-
   ipcMain.handle(
     'unblock-music',
     /**
@@ -145,15 +159,26 @@ export function initIpcMain(win, store, trayEventEmitter) {
      * @param {*} _
      * @param {string | null} sourceListString
      * @param {Record<string, any>} ncmTrack
-     * @param {UNM.Context} context
+     * @param {Record<string, any>} settings
      */
-    async (_, sourceListString, ncmTrack, context) => {
-      // Formt the track input
-      // FIXME: Figure out the structure of Track
+    async (_, sourceListString, ncmTrack, settings = {}) => {
+      configureUnblockMusic(settings);
+
+      if (settings.proxyUri) {
+        try {
+          global.proxy = require('url').parse(settings.proxyUri);
+        } catch (error) {
+          global.proxy = null;
+          log(`Invalid UNM proxy: ${error}`);
+        }
+      } else {
+        global.proxy = null;
+      }
+
       const song = {
         id: ncmTrack.id && ncmTrack.id.toString(),
         name: ncmTrack.name,
-        duration: ncmTrack.dt,
+        duration: ncmTrack.dt || ncmTrack.duration || 0,
         album: ncmTrack.al && {
           id: ncmTrack.al.id && ncmTrack.al.id.toString(),
           name: ncmTrack.al.name,
@@ -168,28 +193,20 @@ export function initIpcMain(win, store, trayEventEmitter) {
 
       const sourceList =
         typeof sourceListString === 'string'
-          ? parseSourceStringToList(unmExecutor, sourceListString)
-          : ['ytdl', 'bilibili', 'pyncm', 'kugou'];
+          ? parseSourceStringToList(sourceListString)
+          : DEFAULT_UNM_SOURCES;
       log(`[UNM] using source: ${sourceList.join(', ')}`);
-      log(`[UNM] using configuration: ${JSON.stringify(context)}`);
+      log(
+        `[UNM] using configuration: flac=${settings.enableFlac === true}, ` +
+          `searchMode=${settings.searchMode || 'fast-first'}, ` +
+          `proxy=${settings.proxyUri ? 'configured' : 'disabled'}`
+      );
 
       try {
-        // TODO: tell users to install yt-dlp.
-        const matchedAudio = await unmExecutor.search(
-          sourceList,
-          song,
-          context
-        );
-        const retrievedSong = await unmExecutor.retrieve(matchedAudio, context);
-
-        // bilibili's audio file needs some special treatment
-        if (retrievedSong.url.includes('bilivideo.com')) {
-          retrievedSong.url = await getBiliVideoFile(retrievedSong.url);
-        }
-
-        log(`respond with retrieve song…`);
-        log(JSON.stringify(matchedAudio));
-        return retrievedSong;
+        const matchedSong = await getUnblockMatch()(song.id, sourceList, song);
+        log(`respond with matched song…`);
+        log(JSON.stringify(matchedSong));
+        return matchedSong;
       } catch (err) {
         const errorMessage = err instanceof Error ? `${err.message}` : `${err}`;
         log(`UnblockNeteaseMusic failed: ${errorMessage}`);
@@ -273,7 +290,7 @@ export function initIpcMain(win, store, trayEventEmitter) {
     );
   });
 
-  ipcMain.on('removeProxy', (event, arg) => {
+  ipcMain.on('removeProxy', () => {
     log('removeProxy');
     win.webContents.session.setProxy({});
     store.set('proxy', '');

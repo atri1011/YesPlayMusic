@@ -346,7 +346,7 @@
             <div class="description">
               音源的具体代号
               <a
-                href="https://github.com/UnblockNeteaseMusic/server-rust/blob/main/README.md#支援的所有引擎"
+                href="https://github.com/UnblockNeteaseMusic/server#音源清单"
                 target="_blank"
               >
                 可以点此到 UNM 的说明页面查询。 </a
@@ -404,7 +404,7 @@
             <div class="title">{{ $t('settings.unm.cookie.joox') }}</div>
             <div class="description">
               <a
-                href="https://github.com/UnblockNeteaseMusic/server-rust/tree/main/engines#joox-cookie-設定說明"
+                href="https://github.com/UnblockNeteaseMusic/server#环境变量"
                 target="_blank"
                 >{{ $t('settings.unm.cookie.desc1') }}
               </a>
@@ -425,7 +425,7 @@
             <div class="title"> {{ $t('settings.unm.cookie.qq') }} </div>
             <div class="description">
               <a
-                href="https://github.com/UnblockNeteaseMusic/server-rust/tree/main/engines#qq-cookie-設定說明"
+                href="https://github.com/UnblockNeteaseMusic/server#环境变量"
                 target="_blank"
                 >{{ $t('settings.unm.cookie.desc1') }}
               </a>
@@ -443,10 +443,10 @@
 
         <div class="item">
           <div class="left">
-            <div class="title"> {{ $t('settings.unm.ytdl') }} </div>
+            <div class="title"> {{ $t('settings.unm.cookie.migu') }} </div>
             <div class="description">
               <a
-                href="https://github.com/UnblockNeteaseMusic/server-rust/tree/main/engines#ytdlexe-設定說明"
+                href="https://github.com/UnblockNeteaseMusic/server#环境变量"
                 target="_blank"
                 >{{ $t('settings.unm.cookie.desc1') }}
               </a>
@@ -455,9 +455,9 @@
           </div>
           <div class="right">
             <input
-              v-model="unmYtDlExe"
+              v-model="unmMiguCookie"
               class="text-input margin-right-0"
-              placeholder="ex. youtube-dl"
+              placeholder="aversionid"
             />
           </div>
         </div>
@@ -1330,13 +1330,13 @@ export default {
         });
       },
     },
-    unmYtDlExe: {
+    unmMiguCookie: {
       get() {
-        return this.settings.unmYtDlExe || '';
+        return this.settings.unmMiguCookie || '';
       },
       set(value) {
         this.$store.commit('updateSettings', {
-          key: 'unmYtDlExe',
+          key: 'unmMiguCookie',
           value: value.length && value,
         });
       },
