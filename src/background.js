@@ -191,7 +191,6 @@ class Background {
       webPreferences: {
         webSecurity: false,
         nodeIntegration: true,
-        enableRemoteModule: true,
         contextIsolation: false,
       },
       backgroundColor:
@@ -355,7 +354,6 @@ class Background {
           webPreferences: {
             webSecurity: false,
             nodeIntegration: true,
-            enableRemoteModule: true,
             contextIsolation: false,
           },
         });
