@@ -45,7 +45,9 @@ function getUnblockMatch() {
       try {
         const fs = require('fs');
         fs.mkdirSync(logDir, { recursive: true });
-      } catch {}
+      } catch (mkdirError) {
+        // 目录已存在或不可创建，忽略错误继续
+      }
       process.env.LOG_FILE = path.join(logDir, 'unm.log');
     }
     unblockMatch = require('@unblockneteasemusic/server');
@@ -166,6 +168,34 @@ function parseSourceStringToList(sourceString) {
 }
 
 export function initIpcMain(win, store, trayEventEmitter) {
+  // 选择自定义缓存目录：弹出原生目录选择对话框
+  // 返回用户所选目录路径，取消选择时返回 null
+  ipcMain.handle('select-cache-directory', async () => {
+    const result = await dialog.showOpenDialog(win, {
+      title: '选择缓存文件夹',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    const selectedPath = result.filePaths[0];
+    const fs = require('fs');
+    const path = require('path');
+    // 确保所选目录可写，写入一个占位文件以校验权限
+    const cacheDir = path.join(selectedPath, 'yesplaymusic-cache');
+    try {
+      fs.mkdirSync(cacheDir, { recursive: true });
+      // 写入测试文件以确认权限
+      const testFile = path.join(cacheDir, '.write-test');
+      fs.writeFileSync(testFile, '', { flag: 'w' });
+      fs.unlinkSync(testFile);
+    } catch (error) {
+      log(`select-cache-directory: 目录不可写 ${cacheDir} -> ${error}`);
+      return { error: String(error), path: selectedPath };
+    }
+    return { path: cacheDir };
+  });
+
   ipcMain.handle(
     'unblock-music',
     /**
@@ -225,6 +255,98 @@ export function initIpcMain(win, store, trayEventEmitter) {
         const errorMessage = err instanceof Error ? `${err.message}` : `${err}`;
         log(`UnblockNeteaseMusic failed: ${errorMessage}`);
         return null;
+      }
+    }
+  );
+
+  // 外部歌单导入：在主进程侧抓取 QQ 音乐歌单详情。
+  // 浏览器侧直接请求 QQ 音乐接口会被 CORS / Referer 校验拦截，
+  // 这里借助 Electron 的 net 模块带上 Referer 伪装成客户端，再返回归一化的曲目列表。
+  ipcMain.handle(
+    'fetch-external-playlist',
+    async (_, platform, playlistId) => {
+      if (platform !== 'qq') {
+        return {
+          error: `unsupported platform: ${platform}`,
+          tracks: [],
+        };
+      }
+      try {
+        const net = require('electron').net;
+        const queryResult = await new Promise((resolve, reject) => {
+          const endpointUrl =
+            'https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg';
+          const queryString = new URLSearchParams({
+            disstid: String(playlistId),
+            format: 'json',
+            outCharset: 'utf-8',
+            type: '1',
+            json: '1',
+            utf8: '1',
+            onlysong: '0',
+            new_format: '1',
+          }).toString();
+          const fullUrl = `${endpointUrl}?${queryString}`;
+          let body = '';
+          const request = net.request({
+            method: 'GET',
+            url: fullUrl,
+            redirect: 'follow',
+          });
+          request.setHeader('Referer', 'https://y.qq.com/');
+          request.setHeader(
+            'User-Agent',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+              '(KHTML, like Gecko) Chrome/120.0 Safari/537.36'
+          );
+          request.on('response', response => {
+            response.on('data', chunk => {
+              body += chunk.toString('utf8');
+            });
+            response.on('end', () => {
+              try {
+                resolve(JSON.parse(body));
+              } catch (parseError) {
+                reject(parseError);
+              }
+            });
+          });
+          request.on('error', error => {
+            reject(error);
+          });
+          request.end();
+        });
+
+        const cdList =
+          queryResult?.cdlist?.[0] || queryResult?.data?.cdlist?.[0] || null;
+        if (!cdList) {
+          return {
+            error: 'QQ 音乐返回的歌单数据为空，可能需要登录或歌单不存在',
+            tracks: [],
+            title: `QQ 音乐歌单 ${playlistId}`,
+          };
+        }
+        const title = cdList.dissname || `QQ 音乐歌单 ${playlistId}`;
+        const creator =
+          cdList.nickname || (cdList.creator && cdList.creator.name) || '';
+        const coverUrl = cdList.logo || '';
+        const tracks = (cdList.songlist || []).map(song => ({
+          name: song.songname || song.name || '',
+          artist: (song.singer || [])
+            .map(singer => singer.name)
+            .join(', '),
+          album: song.albumname || (song.album && song.album.name) || '',
+          duration: (song.interval || 0) * 1000,
+        }));
+        return { title, creator, coverUrl, tracks };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        log(`fetch-external-playlist failed: ${errorMessage}`);
+        return {
+          error: `抓取 QQ 音乐歌单失败：${errorMessage}`,
+          tracks: [],
+        };
       }
     }
   );

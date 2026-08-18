@@ -97,26 +97,30 @@
             {{ $t('library.playHistory.title') }}
           </div>
         </div>
-        <button
-          v-show="currentTab === 'playlists'"
-          class="tab-button"
-          @click="openImportPlaylistModal"
-          ><svg-icon icon-class="import" />{{
-            $t('library.importExternalPlaylist')
-          }}
-        </button>
-        <button
-          v-show="currentTab === 'playlists'"
-          class="tab-button"
-          @click="openAddPlaylistModal"
-          ><svg-icon icon-class="plus" />{{ $t('library.newPlayList') }}
-        </button>
-        <button
-          v-show="currentTab === 'cloudDisk'"
-          class="tab-button"
-          @click="selectUploadFiles"
-          ><svg-icon icon-class="arrow-up-alt" />{{ $t('library.uploadSongs') }}
-        </button>
+        <div class="tab-actions">
+          <button
+            v-show="currentTab === 'playlists'"
+            class="tab-button"
+            @click="openImportPlaylistModal"
+            ><svg-icon icon-class="import" />{{
+              $t('library.importExternalPlaylist')
+            }}
+          </button>
+          <button
+            v-show="currentTab === 'playlists'"
+            class="tab-button"
+            @click="openAddPlaylistModal"
+            ><svg-icon icon-class="plus" />{{ $t('library.newPlayList') }}
+          </button>
+          <button
+            v-show="currentTab === 'cloudDisk'"
+            class="tab-button"
+            @click="selectUploadFiles"
+            ><svg-icon icon-class="arrow-up-alt" />{{
+              $t('library.uploadSongs')
+            }}
+          </button>
+        </div>
       </div>
 
       <div v-show="currentTab === 'playlists'">
@@ -540,7 +544,15 @@ h1 {
 .tabs-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
+}
+
+.tab-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .tabs {

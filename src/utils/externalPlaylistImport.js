@@ -44,6 +44,7 @@ function extractFirstUrl(raw) {
 /**
  * QQ 音乐适配器。支持形如
  *   https://i.y.qq.com/n2/m/share/details/rdetail.html?playlistId=XXXX
+ *   https://i2.y.qq.com/n3/other/pages/details/playlist.html?...&id=XXXX
  *   https://y.qq.com/n/ryqq/playlist/XXXX
  * 以及分享卡片文本。
  */
@@ -62,14 +63,61 @@ export const qqMusicAdapter = {
     const idMatch =
       url.match(/playlistId=([^&]+)/i) ||
       url.match(/playlist\/([A-Za-z0-9]+)/i) ||
+      url.match(/[?&]id=([0-9]+)/i) ||
       url.match(/id=([0-9]+)/i);
     if (!idMatch) {
       throw new Error('无法识别 QQ 音乐歌单 ID，请检查链接是否完整');
     }
     const playlistId = idMatch[1];
 
-    // QQ 音乐的私有接口跨域且需签名，浏览器侧无法稳定调用。
-    // 这里通过网易云搜索接口尽力匹配曲目名称，最大程度复用本平台能力。
+    // 优先在 Electron 主进程侧抓取 QQ 音乐歌单详情。
+    // QQ 音乐的接口要求 Referer/UA 伪装，浏览器侧会被 CORS 拦截，因此走 IPC。
+    if (process.env.IS_ELECTRON === true) {
+      try {
+        const electron = window.require('electron');
+        const result = await electron.ipcRenderer.invoke(
+          'fetch-external-playlist',
+          'qq',
+          playlistId
+        );
+        if (result && result.tracks && result.tracks.length > 0) {
+          return {
+            platform: 'qq',
+            title: result.title || `QQ 音乐歌单 ${playlistId}`,
+            creator: result.creator || '',
+            coverUrl: result.coverUrl || '',
+            tracks: result.tracks,
+          };
+        }
+        // 主进程侧未能拿到曲目（例如歌单不存在、需要登录），回退到分享文本解析。
+        if (result && result.error) {
+          // 只有当用户输入确实只是链接、没有可解析的曲目文本时才抛错；
+          // 否则继续走分享文本解析，给用户一次补救机会。
+          const fallbackTracks = safeParseShareText(input);
+          if (fallbackTracks.length === 0) {
+            throw new Error(result.error);
+          }
+          return {
+            platform: 'qq',
+            title: result.title || `QQ 音乐歌单 ${playlistId}`,
+            tracks: fallbackTracks,
+          };
+        }
+      } catch (ipcError) {
+        // IPC 通道不可用时退回分享文本解析，保证流程尽量可用。
+        const fallbackTracks = safeParseShareText(input);
+        if (fallbackTracks.length === 0) {
+          throw ipcError;
+        }
+        return {
+          platform: 'qq',
+          title: `QQ 音乐歌单 ${playlistId}`,
+          tracks: fallbackTracks,
+        };
+      }
+    }
+
+    // 非 Electron 环境（纯 Web）：QQ 音乐接口跨域受限，仅能依赖分享文本。
     const tracks = await fetchTracksFromShareText(input, 'QQ音乐');
     return {
       platform: 'qq',
@@ -315,4 +363,19 @@ async function fetchTracksFromShareText(rawText, platformLabel) {
 
   // 搜索匹配放到 modal 组件中按需执行，这里仅返回解析后的曲目元数据。
   return tracks;
+}
+
+/**
+ * 安全版本的分享文本解析：解析失败时返回空数组而不是抛错。
+ * 用于在主进程抓取失败、需要回退到分享文本的分支中，避免把二次错误覆盖原始错误信息。
+ *
+ * @param {string} rawText
+ * @returns {ExternalTrack[]}
+ */
+function safeParseShareText(rawText) {
+  try {
+    return parsePlainTrackLines(rawText);
+  } catch (error) {
+    return [];
+  }
 }
