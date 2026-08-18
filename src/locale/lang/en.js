@@ -166,6 +166,12 @@ export default {
       text: 'Songs Cache limit',
       none: 'None',
     },
+    cachePath: {
+      text: 'Cache file location',
+      default: 'Default (IndexedDB)',
+      select: 'Select Folder',
+      reset: 'Reset to Default',
+    },
     lyricFontSize: {
       text: 'Lyric Font Size',
       small: 'Small',

@@ -163,6 +163,12 @@ export default {
       text: '歌曲快取上限',
       none: '無限制',
     },
+    cachePath: {
+      text: '快取檔案位置',
+      default: '預設（IndexedDB）',
+      select: '選擇資料夾',
+      reset: '恢復預設',
+    },
     lyricFontSize: {
       text: '歌詞字體大小',
       small: '小',

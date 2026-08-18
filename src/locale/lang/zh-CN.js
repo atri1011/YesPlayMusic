@@ -167,6 +167,12 @@ export default {
       text: '歌曲缓存上限',
       none: '无限制',
     },
+    cachePath: {
+      text: '缓存文件位置',
+      default: '默认（IndexedDB）',
+      select: '选择文件夹',
+      reset: '恢复默认',
+    },
     lyricFontSize: {
       text: '歌词字体大小',
       small: '小',

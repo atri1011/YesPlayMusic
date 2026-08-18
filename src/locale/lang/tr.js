@@ -162,6 +162,12 @@ export default {
       text: 'Şarkılar Önbellek sınırı',
       none: 'Yok',
     },
+    cachePath: {
+      text: 'Önbellek dosya konumu',
+      default: 'Varsayılan (IndexedDB)',
+      select: 'Klasör Seç',
+      reset: 'Varsayılana Sıfırla',
+    },
     lyricFontSize: {
       text: 'Şarkı Sözleri Yazı Boyutu',
       small: 'Küçük',

@@ -196,6 +196,29 @@
       <div v-if="isElectron" class="item">
         <div class="left">
           <div class="title">
+            {{ $t('settings.cachePath.text') }}
+          </div>
+          <div v-if="cachePath" class="subtitle">{{ cachePath }}</div>
+          <div v-else class="subtitle">{{
+            $t('settings.cachePath.default')
+          }}</div>
+        </div>
+        <div class="right">
+          <button @click="selectCachePath()">
+            {{ $t('settings.cachePath.select') }}
+          </button>
+          <button
+            v-if="cachePath"
+            style="margin-left: 12px"
+            @click="resetCachePath()"
+          >
+            {{ $t('settings.cachePath.reset') }}
+          </button>
+        </div>
+      </div>
+      <div v-if="isElectron" class="item">
+        <div class="left">
+          <div class="title">
             {{
               $t('settings.cacheCount', {
                 song: tracksCache.length,
@@ -1202,6 +1225,17 @@ export default {
         });
       },
     },
+    cachePath: {
+      get() {
+        return this.settings.cachePath || null;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', {
+          key: 'cachePath',
+          value,
+        });
+      },
+    },
     proxyProtocol: {
       get() {
         return this.settings.proxyConfig?.protocol || 'noProxy';
@@ -1414,6 +1448,25 @@ export default {
       clearDB().then(() => {
         this.countDBSize();
       });
+    },
+    async selectCachePath() {
+      if (!process.env.IS_ELECTRON) return;
+      const result = await ipcRenderer.invoke('select-cache-directory');
+      if (!result) {
+        return;
+      }
+      if (result.error) {
+        this.showToast(`目录不可写：${result.error}`);
+        return;
+      }
+      this.cachePath = result.path;
+      this.showToast('缓存位置已更新，新缓存将写入所选目录');
+      this.countDBSize();
+    },
+    resetCachePath() {
+      this.cachePath = null;
+      this.showToast('已恢复默认缓存位置');
+      this.countDBSize();
     },
     lastfmConnect() {
       lastfmAuth();
@@ -1634,6 +1687,13 @@ h3 {
     font-size: 16px;
     font-weight: 500;
     opacity: 0.78;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    margin-top: 0.4em;
+    opacity: 0.55;
+    word-break: break-all;
   }
 
   .description {
