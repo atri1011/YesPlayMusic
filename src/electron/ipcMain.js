@@ -34,6 +34,20 @@ let unblockMatch;
 
 function getUnblockMatch() {
   if (!unblockMatch) {
+    // @unblockneteasemusic/server 内部用 pino + sonic-boom 输出日志，
+    // 默认写入 fd 1 (stdout)。打包成 asar 的 Windows GUI 应用没有有效的
+    // stdout 文件描述符，sonic-boom 写入时会抛 EBADF: bad file descriptor，
+    // 进程被 Uncaught Exception 终止。仅在打包环境下把日志重定向到 userData
+    // 下的文件，让 pino.destination() 打开真实文件而非 fd 1；开发模式仍输出到终端。
+    if (app.isPackaged && !process.env.LOG_FILE) {
+      const path = require('path');
+      const logDir = app.getPath('logs') || app.getPath('userData');
+      try {
+        const fs = require('fs');
+        fs.mkdirSync(logDir, { recursive: true });
+      } catch {}
+      process.env.LOG_FILE = path.join(logDir, 'unm.log');
+    }
     unblockMatch = require('@unblockneteasemusic/server');
   }
   return unblockMatch;
