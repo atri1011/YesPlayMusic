@@ -180,6 +180,21 @@ module.exports = {
           path.join(__dirname, 'node_modules/jsbi/dist/jsbi-cjs.js')
         );
 
+        // @neteasecloudmusicapienhanced/api 的 util/request.js 静态 require 了
+        // register_checktoken_v2，后者依赖 jsdom，而 jsdom 的传递依赖
+        // @csstools/css-color-parser 是 ESM(.mjs)，webpack 4 无法解析。
+        // 将整个包（含 /server、/module/* 等子路径）标记为 external，运行时从
+        // node_modules 加载，避免 jsdom 进入主进程 bundle。函数形式 externals
+        // 才能匹配子路径（对象形式仅精确匹配包根）。
+        config.externals([
+          (context, request, callback) => {
+            if (/^@neteasecloudmusicapienhanced\/api(\/|$)/.test(request)) {
+              return callback(null, `commonjs2 ${request}`);
+            }
+            callback();
+          },
+        ]);
+
         config.module
           .rule('webpack4_es_fallback')
           .test(/\.js$/)
