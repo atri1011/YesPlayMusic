@@ -26,9 +26,10 @@
       <div class="playing">
         <div class="container" @click.stop>
           <img
+            class="cover-art"
             :src="currentTrack.al && currentTrack.al.picUrl | resizeImage(224)"
             loading="lazy"
-            @click="goToAlbum"
+            @click="goToLyrics"
           />
           <div class="track-info" :title="audioSource">
             <div
@@ -268,9 +269,8 @@ export default {
     goToList() {
       goToListSource();
     },
-    goToAlbum() {
-      if (this.player.currentTrack.al.id === 0) return;
-      this.$router.push({ path: '/album/' + this.player.currentTrack.al.id });
+    goToLyrics() {
+      this.toggleLyrics();
     },
     goToArtist(id) {
       this.$router.push({ path: '/artist/' + id });
@@ -388,6 +388,19 @@ export default {
     box-shadow: 0 6px 8px -2px rgba(0, 0, 0, 0.16);
     cursor: pointer;
     user-select: none;
+    // 克制微交互：hover 轻微放大 + 阴影加深，click 按下反馈
+    // 仅用 transform / box-shadow（GPU 友好），不触发 layout
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 18px -4px rgba(0, 0, 0, 0.24);
+    }
+    &:active {
+      transform: scale(0.95);
+      transition-duration: 0.12s;
+    }
   }
   .track-info {
     height: 46px;
@@ -495,6 +508,19 @@ export default {
   }
   &:active {
     transform: unset;
+  }
+}
+
+// 无障碍：尊重用户的减少动效偏好
+@media (prefers-reduced-motion: reduce) {
+  .cover-art {
+    transition: none !important;
+    &:hover {
+      transform: none;
+    }
+    &:active {
+      transform: none;
+    }
   }
 }
 </style>
