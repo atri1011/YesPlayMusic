@@ -141,10 +141,10 @@
       <h1>
         <img
           class="avatar"
-          :src="data.user.avatarUrl | resizeImage"
+          :src="(data.user && data.user.avatarUrl) | resizeImage"
           loading="lazy"
         />
-        {{ data.user.nickname }}{{ $t('library.sLikedSongs') }}
+        {{ (data.user && data.user.nickname) || '' }}{{ $t('library.sLikedSongs') }}
       </h1>
       <div class="search-box-likepage" @click="searchInPlaylist()">
         <div class="container" :class="{ active: inputFocus }">

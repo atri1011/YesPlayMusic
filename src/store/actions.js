@@ -12,6 +12,7 @@ import {
   likedMVs,
   cloudDisk,
   userAccount,
+  userDetail,
 } from '@/api/user';
 
 export default {
@@ -63,7 +64,12 @@ export default {
   fetchLikedSongs: ({ state, commit }) => {
     if (!isLooseLoggedIn()) return;
     if (isAccountLoggedIn()) {
-      return userLikedSongsIDs({ uid: state.data.user.userId }).then(result => {
+      // /user/account 在某些会话状态下可能返回 profile=null，
+      // 导致 state.data.user 被覆盖成 null。此处防御性读取 userId，
+      // 避免后续 /likelist 请求因 uid 缺失而抛 TypeError。
+      const userId = state.data.user?.userId;
+      if (!userId) return;
+      return userLikedSongsIDs({ uid: userId }).then(result => {
         if (result.ids) {
           commit('updateLikedXXX', {
             name: 'songs',
@@ -76,26 +82,36 @@ export default {
     }
   },
   fetchLikedSongsWithDetails: ({ state, commit }) => {
-    return getPlaylistDetail(state.data.likedSongPlaylistID, true).then(
-      result => {
-        if (result.playlist?.trackIds?.length === 0) {
-          return new Promise(resolve => {
-            resolve();
-          });
-        }
-        return getTrackDetail(
-          result.playlist.trackIds
-            .slice(0, 12)
-            .map(t => t.id)
-            .join(',')
-        ).then(result => {
-          commit('updateLikedXXX', {
-            name: 'songsWithDetails',
-            data: result.songs,
-          });
+    // likedSongPlaylistID 可能尚未由 fetchLikedPlaylist 写入（例如登录后
+    // user.userId 缺失导致 userPlaylist 失败）。此时不应调用
+    // getPlaylistDetail(undefined)，否则返回无 playlist 字段，再读
+    // result.playlist.trackIds 会抛 "Cannot read properties of undefined"。
+    const playlistId = state.data.likedSongPlaylistID;
+    if (!playlistId) {
+      return Promise.resolve();
+    }
+    return getPlaylistDetail(playlistId, true).then(result => {
+      const trackIds = result?.playlist?.trackIds;
+      if (!trackIds || trackIds.length === 0) {
+        // 歌单为空或接口未返回 playlist 时，直接清空详情，避免渲染旧数据。
+        commit('updateLikedXXX', {
+          name: 'songsWithDetails',
+          data: [],
         });
+        return;
       }
-    );
+      return getTrackDetail(
+        trackIds
+          .slice(0, 12)
+          .map(t => t.id)
+          .join(',')
+      ).then(detailResult => {
+        commit('updateLikedXXX', {
+          name: 'songsWithDetails',
+          data: detailResult?.songs ?? [],
+        });
+      });
+    });
   },
   fetchLikedPlaylist: ({ state, commit }) => {
     if (!isLooseLoggedIn()) return;
@@ -190,12 +206,31 @@ export default {
       }
     });
   },
-  fetchUserProfile: ({ commit }) => {
+  fetchUserProfile: ({ commit, state }) => {
     if (!isAccountLoggedIn()) return;
-    return userAccount().then(result => {
-      if (result.code === 200) {
-        commit('updateData', { key: 'user', value: result.profile });
-      }
-    });
+    return userAccount()
+      .then(result => {
+        if (result.code !== 200) return result;
+        // 正常情况：profile 非空，直接写入。
+        if (result.profile) {
+          commit('updateData', { key: 'user', value: result.profile });
+          return result;
+        }
+        // 部分账号（如新注册/未设置昵称）profile 为 null，
+        // 但 account.id 仍是有效 userId。用 userDetail 兜底拿一份
+        // 可用的用户对象，避免 state.data.user 为 null 导致后续
+        // avatarUrl/userId 读取全部报错、音乐库整页空白。
+        const accountId = result.account?.id ?? result.account?.userId;
+        if (!accountId) return result;
+        return userDetail(accountId).then(detailResult => {
+          if (detailResult.code === 200 && detailResult.profile) {
+            commit('updateData', {
+              key: 'user',
+              value: detailResult.profile,
+            });
+          }
+          return detailResult;
+        });
+      });
   },
 };

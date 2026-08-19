@@ -3,9 +3,9 @@
     <h1>
       <img
         class="avatar"
-        :src="data.user.avatarUrl | resizeImage"
+        :src="(data.user && data.user.avatarUrl) | resizeImage"
         loading="lazy"
-      />{{ data.user.nickname }}{{ $t('library.sLibrary') }}
+      />{{ (data.user && data.user.nickname) || '' }}{{ $t('library.sLibrary') }}
     </h1>
     <div class="section-one">
       <div class="liked-songs" @click="goToLikedSongsList">
@@ -295,11 +295,11 @@ export default {
     },
     filterPlaylists() {
       const playlists = this.liked.playlists.slice(1);
-      const userId = this.data.user.userId;
+      const userId = this.data.user?.userId;
       if (this.playlistFilter === 'mine') {
-        return playlists.filter(p => p.creator.userId === userId);
+        return playlists.filter(p => p.creator?.userId === userId);
       } else if (this.playlistFilter === 'liked') {
-        return playlists.filter(p => p.creator.userId !== userId);
+        return playlists.filter(p => p.creator?.userId !== userId);
       }
       return playlists;
     },
