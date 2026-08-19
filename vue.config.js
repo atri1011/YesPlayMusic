@@ -216,6 +216,17 @@ module.exports = {
           .loader('esbuild-loader')
           .options({ target: 'es2015', format: 'cjs' })
           .end();
+
+        // 主进程的 src/ 文件也需要 transpile（可选链 ?. 等 ES2020 语法）
+        config.module
+          .rule('webpack4_main_src_fallback')
+          .test(/\.js$/)
+          .include.add(resolve('src'))
+          .end()
+          .use('esbuild-loader')
+          .loader('esbuild-loader')
+          .options({ target: 'es2015', format: 'cjs' })
+          .end();
       },
       // 渲染线程的配置文件
       chainWebpackRendererProcess: config => {
