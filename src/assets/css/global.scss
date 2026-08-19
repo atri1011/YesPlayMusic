@@ -44,10 +44,10 @@
   --ease-in-out-soft: cubic-bezier(0.45, 0, 0.55, 1);
 
   // Durations — 按用途分层
-  --duration-instant: 120ms;   // 按压、toggle
-  --duration-fast: 200ms;     // hover、菜单项
-  --duration-base: 300ms;     // 状态切换、modal
-  --duration-slow: 500ms;     // 布局变化、歌词控制
+  --duration-instant: 120ms; // 按压、toggle
+  --duration-fast: 200ms; // hover、菜单项
+  --duration-base: 300ms; // 状态切换、modal
+  --duration-slow: 500ms; // 布局变化、歌词控制
   --duration-entrance: 700ms; // 入场编排
 
   // Stagger 步长

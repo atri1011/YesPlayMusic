@@ -8,7 +8,11 @@
       @scroll="handleScroll"
     >
       <keep-alive>
-        <transition v-if="$route.meta.keepAlive" name="route-fade" mode="out-in">
+        <transition
+          v-if="$route.meta.keepAlive"
+          name="route-fade"
+          mode="out-in"
+        >
           <router-view></router-view>
         </transition>
       </keep-alive>
