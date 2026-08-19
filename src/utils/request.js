@@ -93,6 +93,11 @@ service.interceptors.response.use(
         router.push({ name: 'login' });
       }
     }
+
+    // 关键：必须把 error 继续向下抛出，否则调用方的 .then() 永远不会触发，
+    // 也没有 .catch() 能感知到失败，调用页面会停留在 show=false 的初始态
+    // 导致整页空白（home/explore/library 都依赖 .then() 才会 show=true）。
+    return Promise.reject(error);
   }
 );
 
