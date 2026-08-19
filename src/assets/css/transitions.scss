@@ -51,16 +51,14 @@
   transform: translateY(8px) scale(0.98);
 }
 
-// ----- Context menu: 从点击点淡入 + 微缩放 --------------------------
+// ----- Context menu: 从点击点淡入 -----------------------------------
 .menu-enter-active,
 .menu-leave-active {
-  transition: opacity var(--duration-fast) var(--ease-out-quint),
-    transform var(--duration-fast) var(--ease-out-quint);
+  transition: opacity var(--duration-fast) var(--ease-out-quint);
 }
 .menu-enter,
 .menu-leave-to {
   opacity: 0;
-  transform: scale(0.92);
 }
 
 // ----- Toast: 从底部上滑淡入 ----------------------------------------

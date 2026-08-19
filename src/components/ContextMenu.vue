@@ -1,18 +1,16 @@
 <template>
   <div ref="contextMenu" class="context-menu">
-    <transition name="menu">
-      <div
-        v-if="showMenu"
-        ref="menu"
-        class="menu"
-        tabindex="-1"
-        :style="menuStyles"
-        @blur="closeMenu"
-        @click="closeMenu"
-      >
-        <slot></slot>
-      </div>
-    </transition>
+    <div
+      v-if="showMenu"
+      ref="menu"
+      class="menu"
+      tabindex="-1"
+      :style="{ top: top, left: left }"
+      @blur="closeMenu"
+      @click="closeMenu"
+    >
+      <slot></slot>
+    </div>
   </div>
 </template>
 
@@ -26,21 +24,10 @@ export default {
       showMenu: false,
       top: '0px',
       left: '0px',
-      originX: 0,
-      originY: 0,
     };
   },
   computed: {
     ...mapState(['player']),
-    menuStyles() {
-      return {
-        top: this.top,
-        left: this.left,
-        transformOrigin: `${this.originX - parseFloat(this.left)}px ${
-          this.originY - parseFloat(this.top)
-        }px`,
-      };
-    },
   },
   methods: {
     setMenu(top, left) {
@@ -63,9 +50,6 @@ export default {
     },
 
     openMenu(e) {
-      // 记录点击原点，让缩放从点击处展开（优雅、有方向感）
-      this.originX = e.x;
-      this.originY = e.y;
       this.showMenu = true;
       this.$nextTick(
         function () {
