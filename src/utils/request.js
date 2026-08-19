@@ -6,7 +6,16 @@ let baseURL = '';
 // Web 和 Electron 跑在不同端口避免同时启动时冲突
 if (process.env.IS_ELECTRON) {
   if (process.env.NODE_ENV === 'production') {
-    baseURL = process.env.VUE_APP_ELECTRON_API_URL;
+    // Express 桥（src/background.js）在 Electron 生产环境固定监听
+    // http://127.0.0.1:27232，并把 /api 代理到内嵌 NCM API（端口 10754）。
+    //
+    // 不直接读取 process.env.VUE_APP_ELECTRON_API_URL，原因：
+    // 在 Git Bash (MSYS) 下执行 electron:build 时，shell 会把以 "/" 开头的
+    // 值（如 "/api"）自动改写成本地路径（如 "C:/Program Files/Git/api"），
+    // 再被 webpack DefinePlugin 内联进产物，导致渲染进程所有 axios 请求
+    // 解析到文件系统（ERR_FILE_NOT_FOUND），首页/发现/音乐库全部加载失败。
+    // 这里改为硬编码绝对地址，彻底规避 MSYS 路径改写。
+    baseURL = 'http://127.0.0.1:27232/api';
   } else {
     baseURL = process.env.VUE_APP_ELECTRON_API_URL_DEV;
   }

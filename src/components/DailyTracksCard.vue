@@ -65,6 +65,12 @@ export default {
         this.showToast(locale.t('toast.needToLogin'));
         return;
       }
+      if (this.dailyTracks.length === 0) {
+        this.showToast(
+          locale.t('toast.dailyTracksLoading') || '请稍候，每日推荐加载中'
+        );
+        return;
+      }
       let trackIDs = this.dailyTracks.map(t => t.id);
       this.$store.state.player.replacePlaylist(
         trackIDs,
