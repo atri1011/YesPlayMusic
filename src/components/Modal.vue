@@ -1,20 +1,20 @@
 <template>
-  <div v-show="show" class="shade" @click="clickOutside">
-    <div class="modal" :style="modalStyles" @click.stop>
-      <div class="header">
-        <div class="title">{{ title }}</div>
-        <button class="close" @click="close"
-          ><svg-icon icon-class="x"
-        /></button>
-      </div>
-      <div class="content"><slot></slot></div>
-      <div v-if="showFooter" class="footer">
-        <!-- <button>取消</button>
-        <button class="primary">确定</button> -->
-        <slot name="footer"></slot>
+  <transition name="modal-shade" appear>
+    <div v-show="show" class="shade" @click="clickOutside">
+      <div class="modal" :style="modalStyles" @click.stop>
+        <div class="header">
+          <div class="title">{{ title }}</div>
+          <button class="close" @click="close"
+            ><svg-icon icon-class="x"
+          /></button>
+        </div>
+        <div class="content"><slot></slot></div>
+        <div v-if="showFooter" class="footer">
+          <slot name="footer"></slot>
+        </div>
       </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 <script>
@@ -90,6 +90,17 @@ export default {
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 128px - 64px);
+
+  // 入/出场与外层 .shade 协同：面板自带 scale + translateY
+  transition: opacity var(--duration-base) var(--ease-out-expo),
+    transform var(--duration-base) var(--ease-out-expo);
+  // scoped 下用 :class 伪选择器作用于 transition 类名
+  // （Vue transition 把类名加在根元素 .shade 上，这里把面板变换与之一致）
+  .shade.modal-shade-enter &,
+  .shade.modal-shade-leave-to & {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
 
   ::-webkit-scrollbar {
     width: 4px;

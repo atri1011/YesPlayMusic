@@ -72,17 +72,24 @@ button {
   background-color: var(--color-primary-bg);
   color: var(--color-primary);
   margin-right: 12px;
-  transition: 0.2s;
+  transition: transform var(--duration-fast) var(--ease-out-quint),
+    background-color var(--duration-fast) var(--ease-out-quart),
+    color var(--duration-fast) var(--ease-out-quart),
+    box-shadow var(--duration-fast) var(--ease-out-quart);
   user-select: none;
+  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.04);
   .svg-icon {
     width: 16px;
     height: 16px;
   }
   &:hover {
-    transform: scale(1.06);
+    transform: scale(1.04);
+    box-shadow: 0 6px 14px -4px rgba(0, 0, 0, 0.12);
   }
   &:active {
     transform: scale(0.94);
+    box-shadow: none;
+    transition-duration: 0.08s;
   }
 }
 button.grey {

@@ -118,6 +118,7 @@ h1 {
   margin-top: 36px;
   margin-bottom: 18px;
   cursor: default;
+  animation: hero-title-enter 0.5s var(--ease-out-expo) both;
   color: var(--color-text);
   display: flex;
   justify-content: space-between;

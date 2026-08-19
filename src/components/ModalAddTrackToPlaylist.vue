@@ -122,7 +122,9 @@ export default {
   margin-right: 6px;
   margin-left: 6px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background-color var(--duration-fast) var(--ease-out-quart),
+    color var(--duration-fast) var(--ease-out-quart),
+    transform var(--duration-instant) var(--ease-out-quint);
   .svg-icon {
     width: 16px;
     height: 16px;
@@ -132,12 +134,16 @@ export default {
     color: var(--color-primary);
     background: var(--color-primary-bg-for-transparent);
   }
+  &:active {
+    transform: scale(0.96);
+  }
 }
 .playlist {
   display: flex;
   padding: 6px;
   border-radius: 8px;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out-quart);
   &:hover {
     background: var(--color-secondary-bg-for-transparent);
   }

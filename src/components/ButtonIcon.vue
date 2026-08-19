@@ -17,7 +17,8 @@ button {
   background: transparent;
   margin: 4px;
   border-radius: 25%;
-  transition: 0.2s;
+  transition: background-color var(--duration-fast) var(--ease-out-quart),
+    transform var(--duration-instant) var(--ease-out-quint);
   .svg-icon {
     color: var(--color-text);
     height: 16px;
@@ -31,6 +32,7 @@ button {
   }
   &:active {
     transform: scale(0.92);
+    transition-duration: 0.08s;
   }
 }
 </style>

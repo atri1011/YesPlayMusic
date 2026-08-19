@@ -197,10 +197,12 @@ export default {
 h1 {
   color: var(--color-text);
   font-size: 56px;
+  animation: hero-title-enter 0.5s var(--ease-out-expo) both;
 }
 .buttons {
   display: flex;
   flex-wrap: wrap;
+  animation: fade-in 0.4s var(--ease-out-quint) 0.2s both;
 }
 .button {
   user-select: none;
@@ -215,16 +217,17 @@ h1 {
   border-radius: 10px;
   background-color: var(--color-secondary-bg);
   color: var(--color-secondary);
-  transition: 0.2s;
+  transition: background-color var(--duration-fast) var(--ease-out-quart),
+    color var(--duration-fast) var(--ease-out-quart),
+    transform var(--duration-instant) var(--ease-out-quint);
 
   &:hover {
     background-color: var(--color-primary-bg);
     color: var(--color-primary);
   }
-}
-.button.active {
-  background-color: var(--color-primary-bg);
-  color: var(--color-primary);
+  &:active {
+    transform: scale(0.95);
+  }
 }
 .panel {
   margin-top: 10px;
@@ -232,6 +235,7 @@ h1 {
   border-radius: 10px;
   padding: 8px;
   color: var(--color-text);
+  animation: panel-slide-in 0.25s var(--ease-out-expo) both;
 
   .big-cat {
     display: flex;

@@ -1,6 +1,11 @@
 <template>
   <div class="mv-row" :class="{ 'without-padding': withoutPadding }">
-    <div v-for="mv in mvs" :key="getID(mv)" class="mv">
+    <div
+      v-for="(mv, index) in mvs"
+      :key="getID(mv)"
+      class="mv"
+      :style="{ '--stagger-index': Math.min(index, 8) }"
+    >
       <div
         class="cover"
         @mouseover="hoverVideoID = getID(mv)"
@@ -121,6 +126,8 @@ export default {
 
 .mv {
   color: var(--color-text);
+  animation: grid-card-enter 0.5s var(--ease-out-quint) both;
+  animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step));
 
   .title {
     font-size: 16px;
@@ -144,9 +151,16 @@ export default {
 
 .cover {
   position: relative;
-  transition: transform 0.3s;
+  transition: transform var(--duration-base) var(--ease-out-quint);
+  border-radius: 0.75em;
+  overflow: hidden;
   &:hover {
     cursor: pointer;
+    transform: translateY(-2px);
+  }
+  &:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
   }
 }
 img {

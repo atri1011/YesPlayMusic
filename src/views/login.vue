@@ -77,6 +77,7 @@ export default {
   margin-bottom: 16px;
   display: flex;
   align-items: center;
+  animation: fade-in 0.5s var(--ease-out-quint) both;
   img {
     height: 64px;
     margin: 20px;
@@ -92,6 +93,7 @@ export default {
   display: flex;
   align-items: center;
   flex-direction: column;
+  animation: fade-in 0.5s var(--ease-out-quint) 0.25s both;
 }
 .card {
   cursor: pointer;
@@ -104,9 +106,19 @@ export default {
   border-radius: 8px;
   height: 128px;
   width: 300px;
-  transition: all 0.3s;
+  transition: transform var(--duration-base) var(--ease-out-quint),
+    box-shadow var(--duration-base) var(--ease-out-quart);
+  box-shadow: 0 4px 8px -4px rgba(51, 94, 234, 0);
   padding-left: 22px;
   box-sizing: border-box;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -8px rgba(51, 94, 234, 0.4);
+  }
+  &:active {
+    transform: scale(0.98);
+  }
 
   .active {
     .title-info {
@@ -128,7 +140,8 @@ export default {
   }
 
   .title-info {
-    transition: all 0.3s;
+    transition: transform var(--duration-base) var(--ease-out-quint),
+      opacity var(--duration-fast) var(--ease-out-quart);
   }
 
   .title {
@@ -145,7 +158,8 @@ export default {
     height: 24px;
     width: 24px;
     margin-left: 16px;
-    transition: all 0.3s;
+    transition: opacity var(--duration-fast) var(--ease-out-quart),
+      transform var(--duration-base) var(--ease-out-quint);
   }
 }
 </style>

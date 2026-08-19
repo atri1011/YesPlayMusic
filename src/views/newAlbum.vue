@@ -45,5 +45,6 @@ export default {
 h1 {
   color: var(--color-text);
   font-size: 56px;
+  animation: hero-title-enter 0.5s var(--ease-out-expo) both;
 }
 </style>

@@ -8,9 +8,13 @@
       @scroll="handleScroll"
     >
       <keep-alive>
-        <router-view v-if="$route.meta.keepAlive"></router-view>
+        <transition v-if="$route.meta.keepAlive" name="route-fade" mode="out-in">
+          <router-view></router-view>
+        </transition>
       </keep-alive>
-      <router-view v-if="!$route.meta.keepAlive"></router-view>
+      <transition v-if="!$route.meta.keepAlive" name="route-fade" mode="out-in">
+        <router-view></router-view>
+      </transition>
     </main>
     <transition name="slide-up">
       <Player v-if="enablePlayer" v-show="showPlayer" ref="player" />
@@ -138,14 +142,5 @@ main {
 
 main::-webkit-scrollbar {
   width: 0px;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.4s;
-}
-.slide-up-enter,
-.slide-up-leave-to {
-  transform: translateY(100%);
 }
 </style>

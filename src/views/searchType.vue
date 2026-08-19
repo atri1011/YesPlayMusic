@@ -1,5 +1,5 @@
 <template>
-  <div v-show="show" class="search">
+  <div class="search">
     <h1>
       <span>{{ $t('search.searchFor') }} {{ typeNameTable[type] }}</span> "{{
         keywords
@@ -142,6 +142,7 @@ h1 {
   margin-top: 32px;
   margin-bottom: 28px;
   color: var(--color-text);
+  animation: hero-title-enter 0.5s var(--ease-out-expo) both;
   span {
     opacity: 0.58;
   }

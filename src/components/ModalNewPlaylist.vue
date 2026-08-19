@@ -130,7 +130,10 @@ export default {
       border-radius: 8px;
       margin-top: -1px;
       color: var(--color-text);
+      transition: background-color var(--duration-fast) var(--ease-out-quart),
+        color var(--duration-fast) var(--ease-out-quart);
       &:focus {
+        outline: none;
         background: var(--color-primary-bg-for-transparent);
         opacity: 1;
       }

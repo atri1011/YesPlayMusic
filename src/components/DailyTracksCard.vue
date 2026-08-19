@@ -85,6 +85,15 @@ export default {
   position: relative;
   overflow: hidden;
   z-index: 1;
+  transition: transform var(--duration-base) var(--ease-out-quint),
+    box-shadow var(--duration-base) var(--ease-out-quart);
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.2);
+  }
+  &:active {
+    transform: scale(0.985);
+  }
 }
 
 img {

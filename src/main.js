@@ -9,6 +9,7 @@ import '@/utils/filters';
 import './registerServiceWorker';
 import { dailyTask } from '@/utils/common';
 import '@/assets/css/global.scss';
+import '@/assets/css/transitions.scss';
 import NProgress from 'nprogress';
 import '@/assets/css/nprogress.css';
 

@@ -1,5 +1,5 @@
 <template>
-  <transition name="fade">
+  <transition name="toast-slide">
     <div v-show="toast.show" class="toast">{{ toast.text }}</div>
   </transition>
 </template>
@@ -39,13 +39,5 @@ export default {
     backdrop-filter: blur(16px) contrast(120%);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s;
-}
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-  opacity: 0;
 }
 </style>

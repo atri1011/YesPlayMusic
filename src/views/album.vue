@@ -337,6 +337,7 @@ export default {
   display: flex;
   width: 78vw;
   margin-bottom: 72px;
+  animation: fade-in 0.4s var(--ease-out-quint) both;
   .info {
     display: flex;
     flex-direction: column;

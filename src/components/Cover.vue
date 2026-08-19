@@ -91,7 +91,15 @@ export default {
 <style lang="scss" scoped>
 .cover {
   position: relative;
-  transition: transform 0.3s;
+  transition: transform 0.18s var(--ease-out-quint);
+  will-change: transform;
+  &:hover {
+    transform: translateY(-2px);
+  }
+  &:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+  }
 }
 .cover-container {
   position: relative;
@@ -133,7 +141,9 @@ img {
   width: 22%;
   border-radius: 50%;
   cursor: default;
-  transition: 0.2s;
+  transition: opacity 0.2s var(--ease-out-quint),
+    transform 0.2s var(--ease-out-quint),
+    background-color 0.2s var(--ease-out-quart);
   .svg-icon {
     width: 50%;
     margin: {
@@ -142,9 +152,11 @@ img {
   }
   &:hover {
     background: rgba(255, 255, 255, 0.28);
+    transform: scale(1.08);
   }
   &:active {
     transform: scale(0.94);
+    transition-duration: 0.08s;
   }
 }
 

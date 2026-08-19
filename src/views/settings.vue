@@ -1713,6 +1713,13 @@ select {
   color: var(--color-text);
   background: var(--color-secondary-bg);
   appearance: none;
+  transition: background-color var(--duration-fast) var(--ease-out-quart),
+    color var(--duration-fast) var(--ease-out-quart),
+    transform var(--duration-instant) var(--ease-out-quint);
+  cursor: pointer;
+  &:hover {
+    background: var(--color-secondary-bg-for-transparent);
+  }
   &:focus {
     outline: none;
     color: var(--color-primary);
@@ -1726,12 +1733,18 @@ button {
   padding: 8px 12px 8px 12px;
   font-weight: 600;
   border-radius: 8px;
-  transition: 0.2s;
+  transition: background-color var(--duration-fast) var(--ease-out-quart),
+    color var(--duration-fast) var(--ease-out-quart),
+    transform var(--duration-instant) var(--ease-out-quint),
+    box-shadow var(--duration-fast) var(--ease-out-quart);
   &:hover {
-    transform: scale(1.06);
+    transform: scale(1.03);
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.12);
   }
   &:active {
     transform: scale(0.94);
+    box-shadow: none;
+    transition-duration: 0.08s;
   }
 }
 
@@ -1869,19 +1882,17 @@ input[type='number'] {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  -webkit-transition: 0.4s ease;
-  transition: 0.4s ease;
+  transition: background-color var(--duration-base) var(--ease-out-quart);
   height: 32px;
   width: 52px;
   background: var(--color-secondary-bg);
   border-radius: 8px;
+  cursor: pointer;
 }
 .toggle input + label:before {
   content: '';
   position: absolute;
   display: block;
-  -webkit-transition: 0.2s cubic-bezier(0.24, 0, 0.5, 1);
-  transition: 0.2s cubic-bezier(0.24, 0, 0.5, 1);
   height: 32px;
   width: 52px;
   top: 0;
@@ -1894,8 +1905,8 @@ input[type='number'] {
   display: block;
   box-shadow: 0 0 0 1px hsla(0, 0%, 0%, 0.02), 0 4px 0px 0 hsla(0, 0%, 0%, 0.01),
     0 4px 9px hsla(0, 0%, 0%, 0.08), 0 3px 3px hsla(0, 0%, 0%, 0.03);
-  -webkit-transition: 0.35s cubic-bezier(0.54, 1.6, 0.5, 1);
-  transition: 0.35s cubic-bezier(0.54, 1.6, 0.5, 1);
+  transition: transform var(--duration-base) var(--ease-out-quint),
+    background-color var(--duration-fast) var(--ease-out-quart);
   background: #fff;
   height: 20px;
   width: 20px;
@@ -1903,12 +1914,13 @@ input[type='number'] {
   left: 6px;
   border-radius: 6px;
 }
-.toggle input:checked + label:before {
+.toggle input:checked + label {
   background: var(--color-primary-gradient);
-  -webkit-transition: width 0.2s cubic-bezier(0, 0, 0, 0.1);
-  transition: width 0.2s cubic-bezier(0, 0, 0, 0.1);
 }
 .toggle input:checked + label:after {
-  left: 26px;
+  transform: translateX(20px);
+}
+.toggle input:focus-visible + label {
+  box-shadow: 0 0 0 3px var(--color-primary-bg-for-transparent);
 }
 </style>

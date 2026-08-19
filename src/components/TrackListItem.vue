@@ -2,7 +2,10 @@
   <div
     class="track"
     :class="trackClass"
-    :style="trackStyle"
+    :style="{
+      ...trackStyle,
+      '--stagger-index': Math.min(trackNo - 1, 12),
+    }"
     :title="showUnavailableSongInGreyStyle ? track.reason : ''"
     @mouseover="hover = true"
     @mouseleave="hover = false"
@@ -233,7 +236,8 @@ button {
   padding: 8px;
   background: transparent;
   border-radius: 25%;
-  transition: transform 0.2s;
+  transition: transform var(--duration-fast) var(--ease-out-quint),
+    background-color var(--duration-fast) var(--ease-out-quart);
   .svg-icon {
     height: 16px;
     width: 16px;
@@ -241,9 +245,11 @@ button {
   }
   &:hover {
     transform: scale(1.12);
+    background: var(--color-secondary-bg-for-transparent);
   }
   &:active {
-    transform: scale(0.96);
+    transform: scale(0.92);
+    transition-duration: 0.08s;
   }
 }
 
@@ -253,6 +259,14 @@ button {
   padding: 8px;
   border-radius: 12px;
   user-select: none;
+
+  // 入场动画：错峰上浮 + 淡入（首屏有序排布，避免生硬出现）
+  animation: list-item-enter 0.4s var(--ease-out-quint) both;
+  animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step));
+
+  &:hover {
+    background: var(--color-secondary-bg-for-transparent) !important;
+  }
 
   .no {
     display: flex;
@@ -377,7 +391,8 @@ button {
 }
 
 .track.focus {
-  transition: all 0.3s;
+  transition: background var(--duration-base) var(--ease-out-quart),
+    transform var(--duration-instant) var(--ease-out-quint);
   background: var(--color-secondary-bg);
 }
 

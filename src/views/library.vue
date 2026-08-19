@@ -446,6 +446,7 @@ h1 {
   color: var(--color-text);
   display: flex;
   align-items: center;
+  animation: hero-title-enter 0.5s var(--ease-out-expo) both;
   .avatar {
     height: 44px;
     margin-right: 12px;
@@ -458,6 +459,7 @@ h1 {
 .section-one {
   display: flex;
   margin-top: 24px;
+  animation: fade-in 0.4s var(--ease-out-quint) 0.15s both;
   .songs {
     flex: 7;
     margin-top: 8px;
@@ -474,10 +476,20 @@ h1 {
   padding: 18px 24px;
   display: flex;
   flex-direction: column;
-  transition: all 0.4s;
+  transition: transform var(--duration-base) var(--ease-out-quint),
+    box-shadow var(--duration-base) var(--ease-out-quart),
+    background-color var(--duration-base) var(--ease-out-quart);
   box-sizing: border-box;
 
   background: var(--color-primary-bg);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -8px rgba(51, 94, 234, 0.3);
+  }
+  &:active {
+    transform: scale(0.985);
+  }
 
   .bottom {
     display: flex;
@@ -539,6 +551,7 @@ h1 {
 .section-two {
   margin-top: 54px;
   min-height: calc(100vh - 182px);
+  animation: fade-in 0.4s var(--ease-out-quint) 0.25s both;
 }
 
 .tabs-row {
@@ -567,11 +580,16 @@ h1 {
     border-radius: 8px;
     cursor: pointer;
     user-select: none;
-    transition: 0.2s;
+    transition: background-color var(--duration-fast) var(--ease-out-quart),
+      opacity var(--duration-fast) var(--ease-out-quart),
+      transform var(--duration-instant) var(--ease-out-quint);
     opacity: 0.68;
     &:hover {
       opacity: 0.88;
       background-color: var(--color-secondary-bg);
+    }
+    &:active {
+      transform: scale(0.95);
     }
   }
   .tab.active {

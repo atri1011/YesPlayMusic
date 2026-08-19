@@ -36,6 +36,24 @@
 }
 
 :root {
+  // ---- Motion design tokens ----------------------------------------------
+  // Easing curves — 自然减速，禁用 bounce / elastic
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-soft: cubic-bezier(0.45, 0, 0.55, 1);
+
+  // Durations — 按用途分层
+  --duration-instant: 120ms;   // 按压、toggle
+  --duration-fast: 200ms;     // hover、菜单项
+  --duration-base: 300ms;     // 状态切换、modal
+  --duration-slow: 500ms;     // 布局变化、歌词控制
+  --duration-entrance: 700ms; // 入场编排
+
+  // Stagger 步长
+  --stagger-step: 40ms;
+
+  // ---- Color tokens -------------------------------------------------------
   --color-body-bg: #ffffff;
   --color-text: #000;
   --color-primary: #335eea;
@@ -134,4 +152,18 @@ a {
 
 .user-select-none {
   user-select: none;
+}
+
+// ---- Accessibility: respect reduced-motion preference -------------------
+// 全站统一兜底：当用户系统设置「减少动态效果」时，关闭动画时长与迭代，
+// 仅保留颜色/透明度的瞬时切换以维持可用性。
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

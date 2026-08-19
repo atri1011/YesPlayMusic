@@ -1,10 +1,14 @@
 <template>
   <div class="cover-row" :style="rowStyles">
     <div
-      v-for="item in items"
+      v-for="(item, index) in items"
       :key="item.id"
       class="item"
       :class="{ artist: type === 'artist' }"
+      :style="{
+        '--stagger-index': Math.min(index, 8),
+        animationDelay: `calc(var(--stagger-index) * var(--stagger-step))`,
+      }"
     >
       <Cover
         :id="item.id"
@@ -106,7 +110,6 @@ export default {
         let img1v1ID = item.img1v1Url.split('/');
         img1v1ID = img1v1ID[img1v1ID.length - 1];
         if (img1v1ID === '5639395138885805.jpg') {
-          // 没有头像的歌手，网易云返回的img1v1Url并不是正方形的 😅😅😅
           return 'https://p2.music.126.net/VnZiScyynLG7atLIZ2YPkw==/18686200114669622.jpg?param=512y512';
         }
       }
@@ -124,6 +127,11 @@ export default {
 
 .item {
   color: var(--color-text);
+
+  // 入场动画：错峰上浮 + 淡入
+  animation: grid-card-enter 0.5s var(--ease-out-quint) both;
+  animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step));
+
   .text {
     margin-top: 8px;
     .title {
@@ -180,7 +188,6 @@ export default {
   opacity: 0.28;
   color: var(--color-text);
   margin-right: 4px;
-  // float: right;
   .svg-icon {
     height: 12px;
     width: 12px;

@@ -123,6 +123,15 @@ export default {
   display: flex;
   height: 198px;
   box-sizing: border-box;
+  transition: transform var(--duration-base) var(--ease-out-quint),
+    box-shadow var(--duration-base) var(--ease-out-quart);
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.16);
+  }
+  &:active {
+    transform: scale(0.985);
+  }
 }
 .cover {
   height: 100%;

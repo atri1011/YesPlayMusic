@@ -46,8 +46,8 @@
         <img
           class="avatar"
           :src="avatarUrl"
-          @click="showUserProfileMenu"
           loading="lazy"
+          @click="showUserProfileMenu"
         />
       </div>
     </nav>
@@ -241,7 +241,9 @@ nav.has-custom-titlebar {
     border-radius: 6px;
     padding: 6px 10px;
     color: var(--color-text);
-    transition: 0.2s;
+    transition: background-color var(--duration-fast) var(--ease-out-quart),
+      color var(--duration-fast) var(--ease-out-quart),
+      transform var(--duration-instant) var(--ease-out-quint);
     -webkit-user-drag: none;
     margin: {
       right: 12px;
@@ -252,7 +254,6 @@ nav.has-custom-titlebar {
     }
     &:active {
       transform: scale(0.92);
-      transition: 0.2s;
     }
   }
   a.active {
@@ -279,6 +280,14 @@ nav.has-custom-titlebar {
     background: var(--color-secondary-bg-for-transparent);
     border-radius: 8px;
     width: 200px;
+    transition: width var(--duration-base) var(--ease-out-quint),
+      background-color var(--duration-base) var(--ease-out-quart),
+      box-shadow var(--duration-base) var(--ease-out-quart);
+
+    &.active {
+      width: 260px;
+      box-shadow: 0 0 0 3px var(--color-primary-bg-for-transparent);
+    }
   }
 
   .svg-icon {
@@ -290,6 +299,9 @@ nav.has-custom-titlebar {
       left: 8px;
       right: 4px;
     }
+    transition: opacity var(--duration-base) var(--ease-out-quart),
+      color var(--duration-base) var(--ease-out-quart),
+      transform var(--duration-base) var(--ease-out-quint);
   }
 
   input {
