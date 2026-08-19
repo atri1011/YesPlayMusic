@@ -19,6 +19,7 @@
     <ModalAddTrackToPlaylist v-if="isAccountLoggedIn" />
     <ModalNewPlaylist v-if="isAccountLoggedIn" />
     <ModalImportExternalPlaylist v-if="isAccountLoggedIn" />
+    <ModalTrackComments v-if="enablePlayer" />
     <transition v-if="enablePlayer" name="slide-up">
       <Lyrics v-show="showLyrics" />
     </transition>
@@ -29,6 +30,7 @@
 import ModalAddTrackToPlaylist from './components/ModalAddTrackToPlaylist.vue';
 import ModalNewPlaylist from './components/ModalNewPlaylist.vue';
 import ModalImportExternalPlaylist from './components/ModalImportExternalPlaylist.vue';
+import ModalTrackComments from './components/ModalTrackComments.vue';
 import Scrollbar from './components/Scrollbar.vue';
 import Navbar from './components/Navbar.vue';
 import Player from './components/Player.vue';
@@ -47,6 +49,7 @@ export default {
     ModalAddTrackToPlaylist,
     ModalNewPlaylist,
     ModalImportExternalPlaylist,
+    ModalTrackComments,
     Lyrics,
     Scrollbar,
   },

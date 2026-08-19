@@ -68,6 +68,14 @@
               ></svg-icon>
             </button-icon>
           </div>
+          <div class="comments-button">
+            <button-icon
+              :title="$t('player.comment')"
+              @click.native="openTrackComments"
+            >
+              <svg-icon icon-class="comment"></svg-icon>
+            </button-icon>
+          </div>
         </div>
         <div class="blank"></div>
       </div>
@@ -231,7 +239,7 @@ export default {
     window.removeEventListener('keydown', this.handleKeydown);
   },
   methods: {
-    ...mapMutations(['toggleLyrics']),
+    ...mapMutations(['toggleLyrics', 'updateModal']),
     ...mapActions(['showToast', 'likeATrack']),
     handleClick(event) {
       if (event.target == this.mouseDownTarget) {
@@ -289,6 +297,14 @@ export default {
     },
     mute() {
       this.player.mute();
+    },
+    openTrackComments() {
+      if (!this.player.currentTrack?.id) return;
+      this.updateModal({
+        modalName: 'trackCommentsModal',
+        key: 'show',
+        value: true,
+      });
     },
 
     setupMediaControls() {
@@ -498,6 +514,10 @@ export default {
 
 .like-button {
   margin-left: 16px;
+}
+
+.comments-button {
+  margin-left: 4px;
 }
 
 .button-icon.disabled {

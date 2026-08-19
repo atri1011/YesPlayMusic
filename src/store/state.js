@@ -48,6 +48,9 @@ export default {
     importExternalPlaylistModal: {
       show: false,
     },
+    trackCommentsModal: {
+      show: false,
+    },
   },
   dailyTracks: [],
   lastfm: JSON.parse(localStorage.getItem('lastfm')) || {},
