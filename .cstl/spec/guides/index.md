@@ -1,0 +1,136 @@
+﻿# Thinking Guides
+
+> **Purpose**: Expand your thinking to catch things you might not have considered.
+
+---
+
+## Why Thinking Guides?
+
+**Most bugs and tech debt come from "didn't think of that"**, not from lack of skill:
+
+- Didn't think about what happens at layer boundaries → cross-layer bugs
+- Didn't think about code patterns repeating → duplicated code everywhere
+- Didn't think about edge cases → runtime errors
+- Didn't think about future maintainers → unreadable code
+
+These guides help you **ask the right questions before coding**.
+
+---
+
+## Available Guides
+
+| Guide | Purpose | When to Use |
+|-------|---------|-------------|
+| [Durable Learning Decision Guide](./durable-learning-decision-guide.md) | Choose no-learning vs spec update vs learning artifact before archive | Finishing a task, parent review, or after `/cstl:break-loop` |
+| [Debug Loop Guide](./debug-loop-guide.md) | Debug discipline: tight red-capable feedback loop before hypotheses; six phases; `[DEBUG-xxx]` tags; Redact; PS7 HITL | User reports a hard bug / performance regression; diagnosis in progress (before `cstl-break-loop`) |
+| [Test Discipline Guide](./test-discipline-guide.md) | 测试写作纪律：pre-agreed seams、垂直切片、三反模式、mock 边界；**不是 TDD 要求** | Writing or reviewing tests; planning what to test; choosing mock boundaries |
+| [Prototype Guide](./prototype-guide.md) | 原型纪律：一次性代码回答设计问题；问题决定形态；LOGIC/Python 默认、UI 原型按项目约定；折叠重写不 mv、留证 + 清理 | A design question needs a runnable throwaway answer (mechanism / state model / algorithm); folding a verdict into design or real code |
+| [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
+| [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
+| [Cross-Platform Thinking Guide](./cross-platform-thinking-guide.md) | Catch OS / filesystem assumptions (paths, shells, line endings, command availability) before they become bugs | Code that may run on Windows / macOS / Linux; paths or shell commands in scripts, hooks, or docs |
+
+> **Framework & platform docs live in `.cstl/framework/`** (framework-owned, refreshed by `cstl update`) — verification strength, injection budget, retrieval routing, Cursor modes/agents/injection, PRD Grill, execution strategy, artifact locale, and more. See [`.cstl/framework/index.md`](../../framework/index.md).
+
+### When using `/cstl-goal` (optional long-horizon mode)
+
+- [ ] User explicitly invoked `/cstl-goal` — default cstl spine unchanged otherwise
+- [ ] Read [cstl-goal Contract](../Trellis/framework/cstl-goal-contract.md) §1 preflight + §3 hard deny before G1 self-drive
+- [ ] High-risk actions: pack per [Action Packet](../Trellis/framework/cstl-goal-action-packet.md) → reviewer seam; no bare execute
+
+---
+
+## Quick Reference: Thinking Triggers
+
+### When to Think About Cross-Layer Issues
+
+- [ ] Feature touches 3+ layers (API, Service, Component, Database)
+- [ ] Data format changes between layers
+- [ ] Multiple consumers need the same data
+- [ ] You're not sure where to put some logic
+- [ ] You are adding an event kind, JSONL record, RPC payload, or config field
+- [ ] UI / command code starts casting raw payload fields directly
+
+→ Read [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md)
+
+### When to Think About Code Reuse
+
+- [ ] You're writing similar code to something that exists
+- [ ] You see the same pattern repeated 3+ times
+- [ ] You're adding a new field to multiple places
+- [ ] **You're modifying any constant or config**
+- [ ] **You're creating a new utility/helper function** ← Search first!
+- [ ] Two files read the same untyped payload field with local casts
+- [ ] Multiple branches update the same derived state from `kind` / `action`
+
+→ Read [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md)
+
+### When Verifying AI Cross-Review Results
+
+- [ ] Reviewer claims "user input can be malicious" → Check the actual data source (internal manifest? user config? external API?)
+- [ ] Reviewer flags "missing validation" → Is the data from a trusted internal source?
+- [ ] Reviewer says "behavior change" → Read the code comments — is it intentional design?
+- [ ] Reviewer identifies a "bug" in test → Mentally delete the feature being tested — does the test still pass? If yes → tautological test
+
+**Common AI reviewer false-positive patterns**:
+1. **Trust boundary confusion**: Treating internal data (bundled JSON manifests) as untrusted external input
+2. **Ignoring design comments**: Flagging intentional behavior documented in code comments as bugs
+3. **Variable misreading**: Not tracing a variable to its actual definition (e.g., Map keyed by path vs name)
+
+**Verification rule**: Every CRITICAL/WARNING finding must be verified against the actual code before prioritizing. Budget ~35% false-positive rate for AI reviews.
+
+### When Debugging Hard Bugs or Performance Regressions
+
+- [ ] User reports something broken / throwing / failing / slow, and it is not obvious at a glance
+- [ ] You find yourself about to read code to form a theory before you have a runnable repro command
+- [ ] A fix attempt failed and you have no regression to prove the fix
+- [ ] You need a human-in-the-loop repro script (PowerShell 7)
+
+→ Read [Debug Loop Guide](./debug-loop-guide.md) (diagnosis in progress; run `cstl-break-loop` after the fix)
+
+### When Writing or Reviewing Tests
+
+- [ ] You're about to write tests for new or existing behavior
+- [ ] You're reviewing a test that breaks on refactor without a behavior change
+- [ ] You need to decide what to mock and where the seam is
+- [ ] Test expectations seem to restate the implementation
+
+→ Read [Test Discipline Guide](./test-discipline-guide.md)
+
+### When a Design Question Needs a Runnable Throwaway
+
+- [ ] 你在验证一个机制 / 状态模型 / 算法「感不感觉对」——不是 bug 调试，是设计验证
+- [ ] 结论要写回 design / prd / 真实代码，但想先跑起来看证据
+- [ ] 准备写一次性脚本回答「如果……会怎样」
+
+→ Read [Prototype Guide](./prototype-guide.md) (LOGIC/Python default; UI prototypes only by project convention; fold+evidence+cleanup)
+
+---
+
+## Pre-Modification Rule (CRITICAL)
+
+> **Before changing ANY value, ALWAYS search first!**
+
+```bash
+# Search for the value you're about to change
+grep -r "value_to_change" .
+```
+
+This single habit prevents most "forgot to update X" bugs.
+
+---
+
+## How to Use This Directory
+
+1. **Before coding**: Skim the relevant thinking guide
+2. **During coding**: If something feels repetitive or complex, check the guides
+3. **After bugs**: Add new insights to the relevant guide (learn from mistakes)
+
+---
+
+## Contributing
+
+Found a new "didn't think of that" moment? Add it to the relevant guide.
+
+---
+
+**Core Principle**: 30 minutes of thinking saves 3 hours of debugging.

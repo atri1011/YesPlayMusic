@@ -48,4 +48,10 @@ devenv.local.nix
 .trellis/workspace/your-name/
 .trellis/scripts/
 .trellis/agents/
+.cstl/tasks/
+.cstl/workspace/atri1011/
+.cstl/scripts/
+.cstl/local/
 _ci_probe/YesPlayMusic Setup 0.4.10.exe
+.trellis/workflow.md
+_ci_extract/

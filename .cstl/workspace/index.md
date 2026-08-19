@@ -38,7 +38,7 @@ workspace/
 Run the initialization script:
 
 ```bash
-python ./.trellis/scripts/init_developer.py <your-name>
+python ./.cstl/scripts/init_developer.py <your-name>
 ```
 
 This will:
@@ -51,12 +51,12 @@ This will:
 
 1. Get your developer name:
    ```bash
-   python ./.trellis/scripts/get_developer.py
+   python ./.cstl/scripts/get_developer.py
    ```
 
 2. Read your personal index:
    ```bash
-   cat .trellis/workspace/$(python ./.trellis/scripts/get_developer.py)/index.md
+   cat .cstl/workspace/$(python ./.cstl/scripts/get_developer.py)/index.md
    ```
 
 ---
