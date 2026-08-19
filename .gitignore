@@ -41,3 +41,11 @@ devenv.local.nix
 
 # pre-commit
 .pre-commit-config.yaml
+.claude/
+.cursor/
+.trellis/spec/
+.trellis/tasks/
+.trellis/workspace/your-name/
+.trellis/scripts/
+.trellis/agents/
+_ci_probe/YesPlayMusic Setup 0.4.10.exe
