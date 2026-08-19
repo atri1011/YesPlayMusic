@@ -5,7 +5,8 @@
         class="avatar"
         :src="(data.user && data.user.avatarUrl) | resizeImage"
         loading="lazy"
-      />{{ (data.user && data.user.nickname) || '' }}{{ $t('library.sLibrary') }}
+      />{{ (data.user && data.user.nickname) || ''
+      }}{{ $t('library.sLibrary') }}
     </h1>
     <div class="section-one">
       <div class="liked-songs" @click="goToLikedSongsList">

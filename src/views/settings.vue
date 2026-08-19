@@ -9,7 +9,9 @@
             loading="lazy"
           />
           <div class="info">
-            <div class="nickname">{{ (data.user && data.user.nickname) || '' }}</div>
+            <div class="nickname">{{
+              (data.user && data.user.nickname) || ''
+            }}</div>
             <div class="extra-info">
               <span v-if="data.user && data.user.vipType !== 0" class="vip"
                 ><img

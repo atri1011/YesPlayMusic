@@ -208,29 +208,28 @@ export default {
   },
   fetchUserProfile: ({ commit, state }) => {
     if (!isAccountLoggedIn()) return;
-    return userAccount()
-      .then(result => {
-        if (result.code !== 200) return result;
-        // 正常情况：profile 非空，直接写入。
-        if (result.profile) {
-          commit('updateData', { key: 'user', value: result.profile });
-          return result;
+    return userAccount().then(result => {
+      if (result.code !== 200) return result;
+      // 正常情况：profile 非空，直接写入。
+      if (result.profile) {
+        commit('updateData', { key: 'user', value: result.profile });
+        return result;
+      }
+      // 部分账号（如新注册/未设置昵称）profile 为 null，
+      // 但 account.id 仍是有效 userId。用 userDetail 兜底拿一份
+      // 可用的用户对象，避免 state.data.user 为 null 导致后续
+      // avatarUrl/userId 读取全部报错、音乐库整页空白。
+      const accountId = result.account?.id ?? result.account?.userId;
+      if (!accountId) return result;
+      return userDetail(accountId).then(detailResult => {
+        if (detailResult.code === 200 && detailResult.profile) {
+          commit('updateData', {
+            key: 'user',
+            value: detailResult.profile,
+          });
         }
-        // 部分账号（如新注册/未设置昵称）profile 为 null，
-        // 但 account.id 仍是有效 userId。用 userDetail 兜底拿一份
-        // 可用的用户对象，避免 state.data.user 为 null 导致后续
-        // avatarUrl/userId 读取全部报错、音乐库整页空白。
-        const accountId = result.account?.id ?? result.account?.userId;
-        if (!accountId) return result;
-        return userDetail(accountId).then(detailResult => {
-          if (detailResult.code === 200 && detailResult.profile) {
-            commit('updateData', {
-              key: 'user',
-              value: detailResult.profile,
-            });
-          }
-          return detailResult;
-        });
+        return detailResult;
       });
+    });
   },
 };
