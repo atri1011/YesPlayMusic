@@ -206,7 +206,7 @@ export default {
       }
     });
   },
-  fetchUserProfile: ({ commit, state }) => {
+  fetchUserProfile: ({ commit }) => {
     if (!isAccountLoggedIn()) return;
     return userAccount().then(result => {
       if (result.code !== 200) return result;

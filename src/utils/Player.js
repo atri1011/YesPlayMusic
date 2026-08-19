@@ -328,7 +328,7 @@ export default class {
       });
     }
   }
-  _handleLoadError(errCode, track) {
+  _handleLoadError(errCode) {
     // code 3: MEDIA_ERR_DECODE
     // code 4: MEDIA_ERR_SRC_NOT_SUPPORTED
     if (errCode === 3) {
@@ -388,18 +388,18 @@ export default class {
                 this._playAudioSource(url, autoplay, null);
               } else if (!url && track.id === this.currentTrackID) {
                 // UNM 也拿不到 url,按 errCode 走原有失败逻辑。
-                this._handleLoadError(errCode, track);
+                this._handleLoadError(errCode);
               }
             })
             .catch(() => {
               if (track.id === this.currentTrackID) {
-                this._handleLoadError(errCode, track);
+                this._handleLoadError(errCode);
               }
             });
           return;
         }
       }
-      this._handleLoadError(errCode, track);
+      this._handleLoadError(errCode);
     });
     if (autoplay) {
       this.play();
