@@ -328,6 +328,31 @@ export default class {
       });
     }
   }
+  _handleLoadError(errCode, track) {
+    // code 3: MEDIA_ERR_DECODE
+    // code 4: MEDIA_ERR_SRC_NOT_SUPPORTED
+    if (errCode === 3) {
+      this._playNextTrack(this._isPersonalFM);
+      return;
+    }
+    if (errCode === 4) {
+      store.dispatch('showToast', `无法播放: 不支持的音频格式`);
+      this._playNextTrack(this._isPersonalFM);
+      return;
+    }
+    // 其它 errCode:重试一次(重新拉取音频源)。
+    const t = this.progress;
+    this._replaceCurrentTrackAudio(this.currentTrack, false, false).then(
+      replaced => {
+        // 如果 replaced 为 false,代表当前的 track 已经不是这里想要替换的track
+        // 此时则不修改当前的歌曲进度
+        if (replaced) {
+          this._howler?.seek(t);
+          this.play();
+        }
+      }
+    );
+  }
   _playAudioSource(source, autoplay = true, onTentativeLoadError = null) {
     const track = this.currentTrack;
     Howler.unload();
@@ -343,55 +368,38 @@ export default class {
     this._howler.on('loaderror', (_, errCode) => {
       // https://developer.mozilla.org/en-US/docs/Web/API/MediaError/code
       // code 3: MEDIA_ERR_DECODE
-      if (errCode === 3) {
-        this._playNextTrack(this._isPersonalFM);
-      } else if (errCode === 4) {
-        // code 4: MEDIA_ERR_SRC_NOT_SUPPORTED
-        store.dispatch('showToast', `无法播放: 不支持的音频格式`);
-        this._playNextTrack(this._isPersonalFM);
-      } else {
-        // 未登录时 outer/url 兜底链接对 VIP 歌曲会加载失败。
-        // 如果当前 source 被标记为 tentative 且提供了 fallback 回调,
-        // 先尝试切到 UNM 音源;失败再走原有的重试/跳下一首逻辑。
-        if (typeof onTentativeLoadError === 'function') {
-          const fallback = onTentativeLoadError();
-          if (fallback) {
-            Promise.resolve(fallback)
-              .then(url => {
-                if (url && track.id === this.currentTrackID) {
-                  // 切到 UNM 音源;传 null 作为 onTentativeLoadError,
-                  // 避免再次失败时递归回退。
-                  this._playAudioSource(url, autoplay, null);
-                } else if (!url && track.id === this.currentTrackID) {
-                  // UNM 也拿不到 url,直接跳下一首,避免反复重试
-                  // 同一个失效的 outer/url 形成循环。
-                  store.dispatch(
-                    'showToast',
-                    `无法播放 ${track.name}:备选音源未匹配`
-                  );
-                  this._playNextTrack(this._isPersonalFM);
-                }
-              })
-              .catch(() => {
-                if (track.id === this.currentTrackID) {
-                  this._playNextTrack(this._isPersonalFM);
-                }
-              });
-            return;
-          }
+      // code 4: MEDIA_ERR_SRC_NOT_SUPPORTED
+      //
+      // 未登录时 outer/url 对 VIP/变灰歌曲会 302 到 /404 页面,返回
+      // HTTP 200 + text/html。howler 把这种 HTML 响应识别为不支持的格式,
+      // 以 errCode=4 触发 loaderror。上一个提交只在 "其它 errCode" 分支
+      // 接 UNM 兜底,errCode=4 直接跳下一首 -> VIP/变灰永远播不了。
+      //
+      // 现在:只要提供了 onTentativeLoadError 回调,先尝试切到 UNM;
+      // UNM 命中则替换播放,未命中/不可用再走原有 errCode 分支(重试/跳下一首)。
+      if (typeof onTentativeLoadError === 'function') {
+        const fallback = onTentativeLoadError();
+        if (fallback) {
+          Promise.resolve(fallback)
+            .then(url => {
+              if (url && track.id === this.currentTrackID) {
+                // 切到 UNM 音源;传 null 作为 onTentativeLoadError,
+                // 避免再次失败时递归回退。
+                this._playAudioSource(url, autoplay, null);
+              } else if (!url && track.id === this.currentTrackID) {
+                // UNM 也拿不到 url,按 errCode 走原有失败逻辑。
+                this._handleLoadError(errCode, track);
+              }
+            })
+            .catch(() => {
+              if (track.id === this.currentTrackID) {
+                this._handleLoadError(errCode, track);
+              }
+            });
+          return;
         }
-        const t = this.progress;
-        this._replaceCurrentTrackAudio(this.currentTrack, false, false).then(
-          replaced => {
-            // 如果 replaced 为 false，代表当前的 track 已经不是这里想要替换的track
-            // 此时则不修改当前的歌曲进度
-            if (replaced) {
-              this._howler?.seek(t);
-              this.play();
-            }
-          }
-        );
       }
+      this._handleLoadError(errCode, track);
     });
     if (autoplay) {
       this.play();
@@ -425,6 +433,76 @@ export default class {
       return this._getAudioSourceBlobURL(t.source);
     });
   }
+  // 未登录时,网易云 outer/url 对 VIP / 下架 / 变灰歌曲会 302 重定向到
+  // /404 页面,返回 HTTP 200 + text/html。howler 把这种"看似成功的 HTML 响应"
+  // 当成不支持的格式,loaderror 以 errCode=4 (MEDIA_ERR_SRC_NOT_SUPPORTED)
+  // 触发,而上一个提交的回退逻辑只处理"其它 errCode",直接跳下一首,
+  // UNM 兜底从未被触发 —— 这就是 VIP/变灰歌曲无法播放的根因。
+  //
+  // 这里在挂载到 howler 之前用 fetch HEAD(no-cors 不可用,故用 same-origin
+  // redirect:manual 的 cors 模式)做一次探测,过滤掉重定向到 404 / content-type
+  // 不是音频的失效链接。探测本身只消耗一个请求,失败时返回 null,交给上层
+  // 走 UNM 兜底,不会阻塞播放。
+  async _probeOuterUrlPlayable(outerUrl, trackId) {
+    try {
+      // redirect: 'manual' 让我们拿到 302 本身而不是跟随后的 404 页面,
+      // 避免被 http->https 跨域策略干扰。ok=false 表示非 2xx。
+      const response = await fetch(outerUrl, {
+        method: 'HEAD',
+        redirect: 'manual',
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'no-store',
+      });
+      const status = response.status;
+      // 302 -> /404 时,manual 模式下 response.type='opaqueredirect',status=0,
+      // 而且无法读取 Location 头。但合法音频通常是 200/302 跟随后的 200,
+      // manual 模式下拿不到跟随结果。为兼顾两种情况,这里对 status=0 也视作失效,
+      // 除非能从 response.url 探测到音频特征。保险起见,失败时返回 false,
+      // 调用方会继续走 UNM 兜底,不会因此误伤可用源。
+      if (status === 0) {
+        // 用 redirect: 'follow' 再试一次,拿到最终 URL 与 content-type
+        const followed = await fetch(outerUrl, {
+          method: 'HEAD',
+          redirect: 'follow',
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store',
+        }).catch(() => null);
+        if (!followed) return false;
+        const finalUrl = followed.url || '';
+        const type = followed.headers.get('content-type') || '';
+        // 重定向落到 /404 页面 -> 视作失效
+        if (/\/404\b/.test(finalUrl)) return false;
+        // content-type 不是音频 -> 视作失效
+        if (type && !/audio|octet-stream/i.test(type)) return false;
+        return true;
+      }
+      if (status >= 200 && status < 300) return true;
+      if (status >= 300 && status < 400) {
+        // 跟随重定向,拿到最终 URL 与 content-type
+        const followed = await fetch(outerUrl, {
+          method: 'HEAD',
+          redirect: 'follow',
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store',
+        }).catch(() => null);
+        if (!followed) return false;
+        const finalUrl = followed.url || '';
+        const type = followed.headers.get('content-type') || '';
+        if (/\/404\b/.test(finalUrl)) return false;
+        if (type && !/audio|octet-stream/i.test(type)) return false;
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.debug(
+        `[debug][Player.js] outer/url probe failed for ${trackId}: ${error}`
+      );
+      return false;
+    }
+  }
   _getAudioSourceFromNetease(track) {
     if (isAccountLoggedIn()) {
       return getMP3(track.id).then(result => {
@@ -438,8 +516,11 @@ export default class {
         return source;
       });
     } else {
-      return new Promise(resolve => {
-        resolve(`https://music.163.com/song/media/outer/url?id=${track.id}`);
+      const outerUrl = `https://music.163.com/song/media/outer/url?id=${track.id}`;
+      // 先探测 outer/url 是否真能给出音频;失效(VIP/变灰 -> 404 页面)时
+      // 直接返回 null,让 _getAudioSourceWithMeta 走 UNM 兜底。
+      return this._probeOuterUrlPlayable(outerUrl, track.id).then(playable => {
+        return playable ? outerUrl : null;
       });
     }
   }
@@ -485,16 +566,38 @@ export default class {
   // 返回 { url, tentative, track } 或 null。
   // tentative = true 表示该 url 是未登录时网易云 outer/url 兜底链接,
   // 对 VIP 歌曲会加载失败,需要在 howler loaderror 时回退到 UNM。
+  // 未登录时:
+  //   - 缓存命中 -> 直接用,tentative=false
+  //   - 缓存未命中 -> 先试 UNM(若启用),命中则用 UNM 的 url,tentative=false
+  //   - UNM 未命中 -> 再试 outer/url(已做 404/content-type 探测),
+  //     探测通过才返回,tentative=true(留作双保险,howler 失败仍可回退)
+  //   - outer/url 也探测失败 -> 返回 null,走 _replaceCurrentTrackAudio
+  //     的 UNPLAYABLE 分支(提示并跳下一首)
+  // 已登录时保持原顺序:缓存 -> 网易云 getMP3 -> UNM 兜底。
   _getAudioSourceWithMeta(track) {
+    const loggedIn = isAccountLoggedIn();
     return this._getAudioSourceFromCache(String(track.id)).then(source => {
       if (source) return { url: source, tentative: false, track };
-      return this._getAudioSourceFromNetease(track).then(source => {
-        if (source) {
-          // 未登录分支返回的是 outer/url 兜底链接,标记为 tentative。
-          return { url: source, tentative: !isAccountLoggedIn(), track };
-        }
-        return this._getAudioSourceFromUnblockMusic(track).then(source => {
-          if (source) return { url: source, tentative: false, track };
+      if (loggedIn) {
+        return this._getAudioSourceFromNetease(track).then(neteaseSource => {
+          if (neteaseSource) {
+            return { url: neteaseSource, tentative: false, track };
+          }
+          return this._getAudioSourceFromUnblockMusic(track).then(unmSource => {
+            if (unmSource) return { url: unmSource, tentative: false, track };
+            return null;
+          });
+        });
+      }
+      // 未登录:先 UNM,再 outer/url(已探测)
+      return this._getAudioSourceFromUnblockMusic(track).then(unmSource => {
+        if (unmSource) return { url: unmSource, tentative: false, track };
+        return this._getAudioSourceFromNetease(track).then(outerSource => {
+          if (outerSource) {
+            // outer/url 已探测为可播放音频,但仍可能是 VIP 试听片段等,
+            // 标记 tentative 让 howler loaderror 仍可二次回退到 UNM。
+            return { url: outerSource, tentative: true, track };
+          }
           return null;
         });
       });
@@ -537,9 +640,10 @@ export default class {
         const { url, tentative } = meta;
         let replaced = false;
         if (track.id === this.currentTrackID) {
-          // 未登录 + tentative url: 如果 outer/url 加载失败,回退到 UNM。
-          // UNM 异步拉取一次,失败则返回 null,交给 howler 既有 loaderror
-          // 逻辑(重试一次 -> 仍失败跳下一首)。
+          // tentative=true 表示 url 是 outer/url 兜底链接(已探测为音频)。
+          // 如果 howler 仍 loaderror(例如探测误判或音频片段损坏),
+          // onTentativeLoadError 会再拉一次 UNM 作为双保险;
+          // fallbackTriggered 防止 UNM 反复重试形成循环。
           let fallbackTriggered = false;
           const onTentativeLoadError = tentative
             ? () => {
