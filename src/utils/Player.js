@@ -328,7 +328,8 @@ export default class {
       });
     }
   }
-  _playAudioSource(source, autoplay = true) {
+  _playAudioSource(source, autoplay = true, onTentativeLoadError = null) {
+    const track = this.currentTrack;
     Howler.unload();
     this._howler = new Howl({
       src: [source],
@@ -349,6 +350,36 @@ export default class {
         store.dispatch('showToast', `无法播放: 不支持的音频格式`);
         this._playNextTrack(this._isPersonalFM);
       } else {
+        // 未登录时 outer/url 兜底链接对 VIP 歌曲会加载失败。
+        // 如果当前 source 被标记为 tentative 且提供了 fallback 回调,
+        // 先尝试切到 UNM 音源;失败再走原有的重试/跳下一首逻辑。
+        if (typeof onTentativeLoadError === 'function') {
+          const fallback = onTentativeLoadError();
+          if (fallback) {
+            Promise.resolve(fallback)
+              .then(url => {
+                if (url && track.id === this.currentTrackID) {
+                  // 切到 UNM 音源;传 null 作为 onTentativeLoadError,
+                  // 避免再次失败时递归回退。
+                  this._playAudioSource(url, autoplay, null);
+                } else if (!url && track.id === this.currentTrackID) {
+                  // UNM 也拿不到 url,直接跳下一首,避免反复重试
+                  // 同一个失效的 outer/url 形成循环。
+                  store.dispatch(
+                    'showToast',
+                    `无法播放 ${track.name}:备选音源未匹配`
+                  );
+                  this._playNextTrack(this._isPersonalFM);
+                }
+              })
+              .catch(() => {
+                if (track.id === this.currentTrackID) {
+                  this._playNextTrack(this._isPersonalFM);
+                }
+              });
+            return;
+          }
+        }
         const t = this.progress;
         this._replaceCurrentTrackAudio(this.currentTrack, false, false).then(
           replaced => {
@@ -451,14 +482,26 @@ export default class {
 
     return retrieveSongInfo.url;
   }
-  _getAudioSource(track) {
-    return this._getAudioSourceFromCache(String(track.id))
-      .then(source => {
-        return source ?? this._getAudioSourceFromNetease(track);
-      })
-      .then(source => {
-        return source ?? this._getAudioSourceFromUnblockMusic(track);
+  // 返回 { url, tentative, track } 或 null。
+  // tentative = true 表示该 url 是未登录时网易云 outer/url 兜底链接,
+  // 对 VIP 歌曲会加载失败,需要在 howler loaderror 时回退到 UNM。
+  _getAudioSourceWithMeta(track) {
+    return this._getAudioSourceFromCache(String(track.id)).then(source => {
+      if (source) return { url: source, tentative: false, track };
+      return this._getAudioSourceFromNetease(track).then(source => {
+        if (source) {
+          // 未登录分支返回的是 outer/url 兜底链接,标记为 tentative。
+          return { url: source, tentative: !isAccountLoggedIn(), track };
+        }
+        return this._getAudioSourceFromUnblockMusic(track).then(source => {
+          if (source) return { url: source, tentative: false, track };
+          return null;
+        });
       });
+    });
+  }
+  _getAudioSource(track) {
+    return this._getAudioSourceWithMeta(track).then(meta => meta?.url ?? null);
   }
   _replaceCurrentTrack(
     id,
@@ -489,11 +532,23 @@ export default class {
     isCacheNextTrack,
     ifUnplayableThen = UNPLAYABLE_CONDITION.PLAY_NEXT_TRACK
   ) {
-    return this._getAudioSource(track).then(source => {
-      if (source) {
+    return this._getAudioSourceWithMeta(track).then(meta => {
+      if (meta) {
+        const { url, tentative } = meta;
         let replaced = false;
         if (track.id === this.currentTrackID) {
-          this._playAudioSource(source, autoplay);
+          // 未登录 + tentative url: 如果 outer/url 加载失败,回退到 UNM。
+          // UNM 异步拉取一次,失败则返回 null,交给 howler 既有 loaderror
+          // 逻辑(重试一次 -> 仍失败跳下一首)。
+          let fallbackTriggered = false;
+          const onTentativeLoadError = tentative
+            ? () => {
+                if (fallbackTriggered) return null;
+                fallbackTriggered = true;
+                return this._getAudioSourceFromUnblockMusic(track);
+              }
+            : null;
+          this._playAudioSource(url, autoplay, onTentativeLoadError);
           replaced = true;
         }
         if (isCacheNextTrack) {
