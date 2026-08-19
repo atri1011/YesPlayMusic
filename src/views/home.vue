@@ -113,17 +113,30 @@ export default {
       setTimeout(() => {
         if (!this.show) NProgress.start();
       }, 1000);
-      getRecommendPlayList(10, false).then(items => {
-        this.recommendPlaylist.items = items;
-        NProgress.done();
-        this.show = true;
-      });
+      // 无论接口成败都必须解除 loading 并显示页面，否则在 API 不可达
+      // （如打包后 Express 代理未就绪、网络异常等）时页面会停留在
+      // v-show=false 的初始态，呈现为整页空白。
+      getRecommendPlayList(10, false)
+        .then(items => {
+          this.recommendPlaylist.items = items;
+        })
+        .catch(err => {
+          console.error('[home] getRecommendPlayList failed:', err);
+        })
+        .finally(() => {
+          NProgress.done();
+          this.show = true;
+        });
       newAlbums({
         area: this.settings.musicLanguage ?? 'ALL',
         limit: 10,
-      }).then(data => {
-        this.newReleasesAlbum.items = data.albums;
-      });
+      })
+        .then(data => {
+          this.newReleasesAlbum.items = data.albums;
+        })
+        .catch(err => {
+          console.error('[home] newAlbums failed:', err);
+        });
 
       const toplistOfArtistsAreaTable = {
         all: null,
@@ -134,22 +147,30 @@ export default {
       };
       toplistOfArtists(
         toplistOfArtistsAreaTable[this.settings.musicLanguage ?? 'all']
-      ).then(data => {
-        let indexs = [];
-        while (indexs.length < 6) {
-          let tmp = ~~(Math.random() * 100);
-          if (!indexs.includes(tmp)) indexs.push(tmp);
-        }
-        this.recommendArtists.indexs = indexs;
-        this.recommendArtists.items = data.list.artists.filter((l, index) =>
-          indexs.includes(index)
-        );
-      });
-      toplists().then(data => {
-        this.topList.items = data.list.filter(l =>
-          this.topList.ids.includes(l.id)
-        );
-      });
+      )
+        .then(data => {
+          let indexs = [];
+          while (indexs.length < 6) {
+            let tmp = ~~(Math.random() * 100);
+            if (!indexs.includes(tmp)) indexs.push(tmp);
+          }
+          this.recommendArtists.indexs = indexs;
+          this.recommendArtists.items = data.list.artists.filter((l, index) =>
+            indexs.includes(index)
+          );
+        })
+        .catch(err => {
+          console.error('[home] toplistOfArtists failed:', err);
+        });
+      toplists()
+        .then(data => {
+          this.topList.items = data.list.filter(l =>
+            this.topList.ids.includes(l.id)
+          );
+        })
+        .catch(err => {
+          console.error('[home] toplists failed:', err);
+        });
       this.$refs.DailyTracksCard.loadDailyTracks();
     },
   },

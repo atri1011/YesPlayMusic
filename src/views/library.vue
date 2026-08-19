@@ -334,19 +334,35 @@ export default {
         this.$store.dispatch('fetchLikedSongsWithDetails');
         this.getRandomLyric();
       } else {
-        this.$store.dispatch('fetchLikedSongsWithDetails').then(() => {
-          NProgress.done();
-          this.show = true;
-          this.getRandomLyric();
-        });
+        this.$store
+          .dispatch('fetchLikedSongsWithDetails')
+          .then(() => {
+            this.getRandomLyric();
+          })
+          .catch(err => {
+            console.error('[library] fetchLikedSongsWithDetails failed:', err);
+          })
+          .finally(() => {
+            NProgress.done();
+            this.show = true;
+          });
       }
-      this.$store.dispatch('fetchLikedSongs');
-      this.$store.dispatch('fetchLikedPlaylist');
-      this.$store.dispatch('fetchLikedAlbums');
-      this.$store.dispatch('fetchLikedArtists');
-      this.$store.dispatch('fetchLikedMVs');
-      this.$store.dispatch('fetchCloudDisk');
-      this.$store.dispatch('fetchPlayHistory');
+      // 这些请求各自独立，失败不应阻塞页面显示
+      Promise.allSettled([
+        this.$store.dispatch('fetchLikedSongs'),
+        this.$store.dispatch('fetchLikedPlaylist'),
+        this.$store.dispatch('fetchLikedAlbums'),
+        this.$store.dispatch('fetchLikedArtists'),
+        this.$store.dispatch('fetchLikedMVs'),
+        this.$store.dispatch('fetchCloudDisk'),
+        this.$store.dispatch('fetchPlayHistory'),
+      ]).then(results => {
+        results.forEach(r => {
+          if (r.status === 'rejected') {
+            console.error('[library] fetch liked failed:', r.reason);
+          }
+        });
+      });
     },
     playLikedSongs() {
       this.$store.state.player.playPlaylistByID(

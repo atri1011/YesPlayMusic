@@ -140,6 +140,15 @@ export default {
       NProgress.done();
       this.show = true;
     },
+    // 接口失败时也要解除 loading、显示页面，避免整页空白
+    handlePlaylistError(err) {
+      console.error('[explore] load playlist failed:', err);
+      this.loadingMore = false;
+      this.showLoadMoreButton = true;
+      this.hasMore = false;
+      NProgress.done();
+      this.show = true;
+    },
     getPlaylist() {
       this.loadingMore = true;
       if (this.activeCategory === '推荐歌单') {
@@ -154,34 +163,42 @@ export default {
       return this.getTopPlayList();
     },
     getRecommendPlayList() {
-      getRecommendPlayList(100, true).then(list => {
-        this.playlists = [];
-        this.updatePlaylist(list);
-      });
+      getRecommendPlayList(100, true)
+        .then(list => {
+          this.playlists = [];
+          this.updatePlaylist(list);
+        })
+        .catch(err => this.handlePlaylistError(err));
     },
     getHighQualityPlaylist() {
       let playlists = this.playlists;
       let before =
         playlists.length !== 0 ? playlists[playlists.length - 1].updateTime : 0;
-      highQualityPlaylist({ limit: 50, before }).then(data => {
-        this.updatePlaylist(data.playlists);
-        this.hasMore = data.more;
-      });
+      highQualityPlaylist({ limit: 50, before })
+        .then(data => {
+          this.updatePlaylist(data.playlists);
+          this.hasMore = data.more;
+        })
+        .catch(err => this.handlePlaylistError(err));
     },
     getTopLists() {
-      toplists().then(data => {
-        this.playlists = [];
-        this.updatePlaylist(data.list);
-      });
+      toplists()
+        .then(data => {
+          this.playlists = [];
+          this.updatePlaylist(data.list);
+        })
+        .catch(err => this.handlePlaylistError(err));
     },
     getTopPlayList() {
       topPlaylist({
         cat: this.activeCategory,
         offset: this.playlists.length,
-      }).then(data => {
-        this.updatePlaylist(data.playlists);
-        this.hasMore = data.more;
-      });
+      })
+        .then(data => {
+          this.updatePlaylist(data.playlists);
+          this.hasMore = data.more;
+        })
+        .catch(err => this.handlePlaylistError(err));
     },
     getCatsByBigCat(name) {
       return playlistCategories.filter(c => c.bigCat === name);
