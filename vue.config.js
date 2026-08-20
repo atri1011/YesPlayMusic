@@ -160,10 +160,9 @@ module.exports = {
               target: 'rpm',
               arch: ['x64'],
             },
-            {
-              target: 'snap',
-              arch: ['x64'],
-            },
+            ...(process.env.ENABLE_LINUX_SNAP === 'true'
+              ? [{ target: 'snap', arch: ['x64'] }]
+              : []),
             {
               target: 'pacman',
               arch: ['x64'],
