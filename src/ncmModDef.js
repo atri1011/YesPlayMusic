@@ -435,6 +435,31 @@ module.exports = [
     module: require('@neteasecloudmusicapienhanced/api/module/daily_signin'),
   },
   {
+    identifier: 'comment_new',
+    route: '/comment/new',
+    module: require('@neteasecloudmusicapienhanced/api/module/comment_new'),
+  },
+  {
+    identifier: 'comment_music',
+    route: '/comment/music',
+    module: require('@neteasecloudmusicapienhanced/api/module/comment_music'),
+  },
+  {
+    identifier: 'comment_floor',
+    route: '/comment/floor',
+    module: require('@neteasecloudmusicapienhanced/api/module/comment_floor'),
+  },
+  {
+    identifier: 'comment_like',
+    route: '/comment/like',
+    module: require('@neteasecloudmusicapienhanced/api/module/comment_like'),
+  },
+  {
+    identifier: 'comment',
+    route: '/comment',
+    module: require('@neteasecloudmusicapienhanced/api/module/comment'),
+  },
+  {
     identifier: 'cloudsearch',
     route: '/cloudsearch',
     module: require('@neteasecloudmusicapienhanced/api/module/cloudsearch'),

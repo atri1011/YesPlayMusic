@@ -32,11 +32,14 @@ const service = axios.create({
 service.interceptors.request.use(function (config) {
   if (!config.params) config.params = {};
   if (baseURL.length) {
-    if (
-      baseURL[0] !== '/' &&
-      !process.env.IS_ELECTRON &&
-      getCookie('MUSIC_U') !== null
-    ) {
+    // 当 baseURL 是绝对地址（如 Electron 生产环境 http://127.0.0.1:27232/api，
+    // 或 web 部署到独立 API 域名）时，页面 origin 与 API host 不一致，
+    // 浏览器 host-only cookie 不会被 withCredentials 自动携带。
+    // 此时统一通过 query 参数 cookie 显式传递 MUSIC_U，NCM API 会从 query 读取。
+    // 注意：Electron 生产环境页面加载自 http://localhost:27232，而 baseURL 是
+    // http://127.0.0.1:27232/api —— localhost 与 127.0.0.1 被浏览器视为不同 host，
+    // cookie 无法跨 host 共享，因此 Electron 也必须走 params.cookie 注入路径。
+    if (baseURL[0] !== '/' && getCookie('MUSIC_U') !== null) {
       config.params.cookie = `MUSIC_U=${getCookie('MUSIC_U')};`;
     }
   } else {
