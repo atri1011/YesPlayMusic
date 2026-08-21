@@ -55,3 +55,4 @@ devenv.local.nix
 _ci_probe/YesPlayMusic Setup 0.4.10.exe
 .trellis/workflow.md
 _ci_extract/
+.cstl/workspace/
