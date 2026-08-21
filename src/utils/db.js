@@ -5,6 +5,12 @@ import store from '@/store';
 
 const db = new Dexie('yesplaymusic');
 
+// lyricNew 与 lyric 分表存储：/lyric/new 的响应是 /lyric 的超集（多出 yrc /
+// ytlrc / yromalrc），共用一张表会让先写入的一方决定形状，导致逐字歌词时有时无。
+db.version(5).stores({
+  lyricNew: '&id, updateTime',
+});
+
 db.version(4).stores({
   trackDetail: '&id, updateTime',
   lyric: '&id, updateTime',
@@ -398,6 +404,21 @@ export function cacheLyric(id, lyrics) {
 
 export function getLyricFromCache(id) {
   return db.lyric.get(Number(id)).then(result => {
+    if (!result) return undefined;
+    return result.lyrics;
+  });
+}
+
+export function cacheLyricNew(id, lyrics) {
+  db.lyricNew.put({
+    id: Number(id),
+    lyrics,
+    updateTime: new Date().getTime(),
+  });
+}
+
+export function getLyricNewFromCache(id) {
+  return db.lyricNew.get(Number(id)).then(result => {
     if (!result) return undefined;
     return result.lyrics;
   });

@@ -24,6 +24,7 @@ let localStorage = {
     enableReversedMode: false,
     nyancatStyle: false,
     showLyricsTranslation: true,
+    showLyricsWordByWord: true,
     lyricsBackground: true,
     enableOsdlyricsSupport: false,
     closeAppOption: 'ask',

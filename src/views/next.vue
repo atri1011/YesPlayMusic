@@ -26,22 +26,54 @@
       :highlight-playing-track="false"
       dbclick-track-func="playTrackOnListByID"
     />
+
+    <h1 v-show="similarTracks.length > 0"
+      >{{ $t('next.similarSongs') }}
+      <button @click="addSimilarTracksToQueue">{{
+        $t('next.addAllToQueue')
+      }}</button>
+    </h1>
+    <TrackList
+      v-show="similarTracks.length > 0"
+      :tracks="similarTracks"
+      type="playlist"
+      :highlight-playing-track="false"
+      dbclick-track-func="playNext"
+    />
+
+    <h1 v-show="similarPlaylists.length > 0">{{
+      $t('next.similarPlaylists')
+    }}</h1>
+    <CoverRow
+      v-show="similarPlaylists.length > 0"
+      :items="similarPlaylists"
+      type="playlist"
+      sub-text="creator"
+      :show-play-button="true"
+    />
   </div>
 </template>
 
 <script>
 import { mapState, mapActions } from 'vuex';
-import { getTrackDetail } from '@/api/track';
+import { getTrackDetail, simiSongs } from '@/api/track';
+import { simiPlaylists } from '@/api/playlist';
 import TrackList from '@/components/TrackList.vue';
+import CoverRow from '@/components/CoverRow.vue';
 
 export default {
   name: 'Next',
   components: {
     TrackList,
+    CoverRow,
   },
   data() {
     return {
       tracks: [],
+      similarTracks: [],
+      similarPlaylists: [],
+      // 已经取过相似推荐的歌曲 id，避免重复请求与响应乱序覆盖
+      similarLoadedFor: 0,
     };
   },
   computed: {
@@ -73,6 +105,7 @@ export default {
   watch: {
     currentTrack() {
       this.loadTracks();
+      this.loadSimilar();
     },
     playerShuffle() {
       this.loadTracks();
@@ -83,6 +116,7 @@ export default {
   },
   activated() {
     this.loadTracks();
+    this.loadSimilar();
     this.$parent.$refs.scrollbar.restorePosition();
   },
   methods: {
@@ -108,6 +142,46 @@ export default {
           this.tracks.push(...newTracks);
         });
       }
+    },
+    /**
+     * 拉取当前歌曲的相似歌曲与相似歌单。
+     * 推荐区拉不到内容不应影响播放队列的展示，因此错误只做静默处理。
+     */
+    loadSimilar() {
+      const trackID = this.currentTrack?.id;
+      if (!trackID || trackID === this.similarLoadedFor) return;
+      this.similarLoadedFor = trackID;
+      this.similarTracks = [];
+      this.similarPlaylists = [];
+
+      simiSongs(trackID, 12)
+        .then(data => {
+          const ids = (data?.songs ?? []).map(song => song.id);
+          // 相似歌曲接口返回的是旧版歌曲结构（artists / album），
+          // TrackList 需要 ar / al，这里再换一次详情
+          if (ids.length === 0) return;
+          return getTrackDetail(ids.join(',')).then(detail => {
+            if (this.similarLoadedFor !== trackID) return;
+            this.similarTracks = (detail?.songs ?? []).filter(Boolean);
+          });
+        })
+        .catch(err => {
+          console.error('[next] simiSongs failed:', err);
+        });
+
+      simiPlaylists(trackID, 10)
+        .then(data => {
+          if (this.similarLoadedFor !== trackID) return;
+          this.similarPlaylists = data?.playlists ?? [];
+        })
+        .catch(err => {
+          console.error('[next] simiPlaylists failed:', err);
+        });
+    },
+    addSimilarTracksToQueue() {
+      this.similarTracks.forEach(track => {
+        this.player.addTrackToPlayNext(track.id);
+      });
     },
   },
 };

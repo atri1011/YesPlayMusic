@@ -68,6 +68,28 @@ export function userPlayHistory(params) {
 }
 
 /**
+ * 最近播放（需要登录）
+ *
+ * 说明 : 与 /user/record 的「听歌排行」不同，这里是按时间倒序的最近播放记录。
+ * 返回结构为 `{ data: { total, list: [{ resourceId, playTime, data }] }}`，
+ * 真正的歌曲 / 歌单 / 专辑对象在每项的 `data` 字段里。
+ * 对应 NeteaseCloudMusicApiEnhanced module/record_recent_*.js
+ *
+ * @param {'song'|'playlist'|'album'|'dj'} type - 资源类型
+ * @param {number=} [limit=100] - 返回数量
+ */
+export function recentPlayRecord(type, limit = 100) {
+  return request({
+    url: `/record/recent/${type}`,
+    method: 'get',
+    params: {
+      limit,
+      timestamp: new Date().getTime(),
+    },
+  });
+}
+
+/**
  * 喜欢音乐列表（需要登录）
  * 说明 : 调用此接口 , 传入用户 id, 可获取已喜欢音乐id列表(id数组)
  * - uid: 用户 id

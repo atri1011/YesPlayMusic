@@ -170,6 +170,16 @@ module.exports = [
     module: require('@neteasecloudmusicapienhanced/api/module/song_detail'),
   },
   {
+    identifier: 'simi_song',
+    route: '/simi/song',
+    module: require('@neteasecloudmusicapienhanced/api/module/simi_song'),
+  },
+  {
+    identifier: 'simi_playlist',
+    route: '/simi/playlist',
+    module: require('@neteasecloudmusicapienhanced/api/module/simi_playlist'),
+  },
+  {
     identifier: 'simi_mv',
     route: '/simi/mv',
     module: require('@neteasecloudmusicapienhanced/api/module/simi_mv'),
@@ -188,6 +198,26 @@ module.exports = [
     identifier: 'scrobble',
     route: '/scrobble',
     module: require('@neteasecloudmusicapienhanced/api/module/scrobble'),
+  },
+  {
+    identifier: 'record_recent_song',
+    route: '/record/recent/song',
+    module: require('@neteasecloudmusicapienhanced/api/module/record_recent_song'),
+  },
+  {
+    identifier: 'record_recent_playlist',
+    route: '/record/recent/playlist',
+    module: require('@neteasecloudmusicapienhanced/api/module/record_recent_playlist'),
+  },
+  {
+    identifier: 'record_recent_dj',
+    route: '/record/recent/dj',
+    module: require('@neteasecloudmusicapienhanced/api/module/record_recent_dj'),
+  },
+  {
+    identifier: 'record_recent_album',
+    route: '/record/recent/album',
+    module: require('@neteasecloudmusicapienhanced/api/module/record_recent_album'),
   },
   {
     identifier: 'recommend_songs',
@@ -363,6 +393,11 @@ module.exports = [
     identifier: 'mv_all',
     route: '/mv/all',
     module: require('@neteasecloudmusicapienhanced/api/module/mv_all'),
+  },
+  {
+    identifier: 'lyric_new',
+    route: '/lyric/new',
+    module: require('@neteasecloudmusicapienhanced/api/module/lyric_new'),
   },
   {
     identifier: 'lyric',

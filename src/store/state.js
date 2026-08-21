@@ -26,6 +26,11 @@ export default {
       weekData: [],
       allData: [],
     },
+    recentPlay: {
+      songs: [],
+      playlists: [],
+      albums: [],
+    },
   },
   contextMenu: {
     clickObjectID: 0,

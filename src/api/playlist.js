@@ -227,3 +227,21 @@ export function intelligencePlaylist(params) {
     params,
   });
 }
+
+/**
+ * 相似歌单
+ * 说明 : 调用此接口 , 传入歌曲 id, 可获得包含这首歌的相似歌单列表
+ * 对应 NeteaseCloudMusicApiEnhanced module/simi_playlist.js
+ * @param {number} id - 歌曲 id
+ * @param {number=} [limit=10] - 取出数量
+ */
+export function simiPlaylists(id, limit = 10) {
+  return request({
+    url: '/simi/playlist',
+    method: 'get',
+    params: {
+      id,
+      limit,
+    },
+  });
+}

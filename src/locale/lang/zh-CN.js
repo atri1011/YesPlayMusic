@@ -45,6 +45,12 @@ export default {
       week: '最近一周',
       all: '所有时间',
     },
+    recentPlay: {
+      title: '最近播放',
+      songs: '单曲',
+      playlists: '歌单',
+      albums: '专辑',
+    },
     userProfileMenu: {
       settings: '设置',
       logout: '登出',
@@ -112,6 +118,9 @@ export default {
   next: {
     nowPlaying: '正在播放',
     nextUp: '即将播放',
+    similarSongs: '相似歌曲',
+    similarPlaylists: '相似歌单',
+    addAllToQueue: '全部加入队列',
   },
   player: {
     like: '喜欢',
@@ -225,6 +234,7 @@ export default {
     clearSongsCache: '清除歌曲缓存',
     cacheCount: '已缓存 {song} 首 ({size})',
     showLyricsTranslation: '显示歌词翻译',
+    showLyricsWordByWord: '逐字歌词（部分歌曲支持）',
     showPlaylistsByAppleMusic: '首页显示来自 Apple Music 的歌单',
     enableDiscordRichPresence: '启用 Discord Rich Presence',
     enableGlobalShortcut: '启用全局快捷键',

@@ -203,6 +203,9 @@ export default {
         // do nothing
       } else if (this.dbclickTrackFunc === 'playTrackOnListByID') {
         this.player.playTrackOnListByID(trackID);
+      } else if (this.dbclickTrackFunc === 'playNext') {
+        // 插队播放：用于推荐列表，不覆盖用户当前的播放队列
+        this.player.addTrackToPlayNext(trackID, true);
       } else if (this.dbclickTrackFunc === 'playPlaylistByID') {
         this.player.playPlaylistByID(this.id, trackID);
       } else if (this.dbclickTrackFunc === 'playAList') {

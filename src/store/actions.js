@@ -13,7 +13,18 @@ import {
   cloudDisk,
   userAccount,
   userDetail,
+  recentPlayRecord,
 } from '@/api/user';
+
+/**
+ * 从最近播放的返回里取出资源对象。
+ * 正常形态是 `{ resourceId, playTime, data }`，这里同时兼容没有 data 包装的情况。
+ */
+function extractRecentPlayItems(result) {
+  return (result?.data?.list ?? [])
+    .map(item => item?.data ?? item)
+    .filter(Boolean);
+}
 
 export default {
   showToast({ state, commit }, text) {
@@ -204,6 +215,38 @@ export default {
           data: data,
         });
       }
+    });
+  },
+  fetchRecentPlay: ({ commit }) => {
+    if (!isAccountLoggedIn()) return;
+    return Promise.all([
+      recentPlayRecord('song'),
+      recentPlayRecord('playlist'),
+      recentPlayRecord('album'),
+    ]).then(([songResult, playlistResult, albumResult]) => {
+      // 最近播放返回的歌曲结构不保证是 TrackList 需要的 ar / al，
+      // 统一再换一次歌曲详情，顺便拿到可播放状态
+      const trackIDs = extractRecentPlayItems(songResult)
+        .map(record => Number(record.id ?? record.resourceId))
+        .filter(id => !Number.isNaN(id));
+
+      const fetchSongs =
+        trackIDs.length > 0
+          ? getTrackDetail(trackIDs.join(',')).then(detail =>
+              (detail?.songs ?? []).filter(Boolean)
+            )
+          : Promise.resolve([]);
+
+      return fetchSongs.then(songs => {
+        commit('updateLikedXXX', {
+          name: 'recentPlay',
+          data: {
+            songs,
+            playlists: extractRecentPlayItems(playlistResult),
+            albums: extractRecentPlayItems(albumResult),
+          },
+        });
+      });
     });
   },
   fetchUserProfile: ({ commit }) => {

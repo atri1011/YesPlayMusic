@@ -92,6 +92,13 @@
           </div>
           <div
             class="tab"
+            :class="{ active: currentTab === 'recentPlay' }"
+            @click="updateCurrentTab('recentPlay')"
+          >
+            {{ $t('library.recentPlay.title') }}
+          </div>
+          <div
+            class="tab"
             :class="{ active: currentTab === 'playHistory' }"
             @click="updateCurrentTab('playHistory')"
           >
@@ -167,11 +174,45 @@
         />
       </div>
 
+      <div v-show="currentTab === 'recentPlay'">
+        <button
+          v-for="mode in recentPlayModes"
+          :key="mode"
+          :class="{
+            'sub-tab-button': true,
+            'sub-tab-button--selected': recentPlayMode === mode,
+          }"
+          @click="recentPlayMode = mode"
+        >
+          {{ $t(`library.recentPlay.${mode}`) }}
+        </button>
+        <TrackList
+          v-show="recentPlayMode === 'songs'"
+          :tracks="liked.recentPlay.songs"
+          :column-number="1"
+          type="tracklist"
+        />
+        <CoverRow
+          v-show="recentPlayMode === 'playlists'"
+          :items="liked.recentPlay.playlists"
+          type="playlist"
+          sub-text="creator"
+          :show-play-button="true"
+        />
+        <CoverRow
+          v-show="recentPlayMode === 'albums'"
+          :items="liked.recentPlay.albums"
+          type="album"
+          sub-text="artist"
+          :show-play-button="true"
+        />
+      </div>
+
       <div v-show="currentTab === 'playHistory'">
         <button
           :class="{
-            'playHistory-button': true,
-            'playHistory-button--selected': playHistoryMode === 'week',
+            'sub-tab-button': true,
+            'sub-tab-button--selected': playHistoryMode === 'week',
           }"
           @click="playHistoryMode = 'week'"
         >
@@ -179,8 +220,8 @@
         </button>
         <button
           :class="{
-            'playHistory-button': true,
-            'playHistory-button--selected': playHistoryMode === 'all',
+            'sub-tab-button': true,
+            'sub-tab-button--selected': playHistoryMode === 'all',
           }"
           @click="playHistoryMode = 'all'"
         >
@@ -261,6 +302,8 @@ export default {
       lyric: undefined,
       currentTab: 'playlists',
       playHistoryMode: 'week',
+      recentPlayMode: 'songs',
+      recentPlayModes: ['songs', 'playlists', 'albums'],
     };
   },
   computed: {
@@ -357,6 +400,7 @@ export default {
         this.$store.dispatch('fetchLikedMVs'),
         this.$store.dispatch('fetchCloudDisk'),
         this.$store.dispatch('fetchPlayHistory'),
+        this.$store.dispatch('fetchRecentPlay'),
       ]).then(results => {
         results.forEach(r => {
           if (r.status === 'rejected') {
@@ -659,7 +703,7 @@ button.tab-button {
   }
 }
 
-button.playHistory-button {
+button.sub-tab-button {
   color: var(--color-text);
   border-radius: 8px;
   padding: 6px 8px;
@@ -678,7 +722,7 @@ button.playHistory-button {
   }
 }
 
-button.playHistory-button--selected {
+button.sub-tab-button--selected {
   color: var(--color-text);
   background: var(--color-secondary-bg);
   opacity: 1;

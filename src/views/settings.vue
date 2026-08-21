@@ -243,6 +243,22 @@
       <h3>{{ $t('settings.lyric') }}</h3>
       <div class="item">
         <div class="left">
+          <div class="title">{{ $t('settings.showLyricsWordByWord') }}</div>
+        </div>
+        <div class="right">
+          <div class="toggle">
+            <input
+              id="show-lyrics-word-by-word"
+              v-model="showLyricsWordByWord"
+              type="checkbox"
+              name="show-lyrics-word-by-word"
+            />
+            <label for="show-lyrics-word-by-word"></label>
+          </div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="left">
           <div class="title">{{ $t('settings.showLyricsTranslation') }}</div>
         </div>
         <div class="right">
@@ -1113,6 +1129,18 @@ export default {
       set(value) {
         this.$store.commit('updateSettings', {
           key: 'showLyricsTranslation',
+          value,
+        });
+      },
+    },
+    showLyricsWordByWord: {
+      get() {
+        // 老版本 localStorage 里没有这个键，缺省视为开启
+        return this.settings.showLyricsWordByWord !== false;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', {
+          key: 'showLyricsWordByWord',
           value,
         });
       },

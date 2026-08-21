@@ -6,6 +6,8 @@ import {
   getTrackDetailFromCache,
   cacheLyric,
   getLyricFromCache,
+  cacheLyricNew,
+  getLyricNewFromCache,
 } from '@/utils/db';
 
 /**
@@ -95,6 +97,34 @@ export function getLyric(id) {
 }
 
 /**
+ * 获取新版歌词
+ * 说明 : 调用此接口 , 传入音乐 id 可获得对应音乐的逐字歌词 (yrc) 以及与之配套的
+ * 翻译 (ytlrc) 和罗马音 (yromalrc)，同时也包含旧版 /lyric 的全部字段
+ * 对应 NeteaseCloudMusicApiEnhanced module/lyric_new.js
+ * @param {number} id - 音乐 id
+ */
+export function getLyricNew(id) {
+  const fetchLatest = () => {
+    return request({
+      url: '/lyric/new',
+      method: 'get',
+      params: {
+        id,
+      },
+    }).then(result => {
+      cacheLyricNew(id, result);
+      return result;
+    });
+  };
+
+  fetchLatest();
+
+  return getLyricNewFromCache(id).then(result => {
+    return result ?? fetchLatest();
+  });
+}
+
+/**
  * 获取云盘歌曲内嵌歌词 * 说明 : 调用此接口 , 传入音乐 id 可获得云盘歌曲的内嵌歌词
  * @param {number} songId - 音乐 id
  * @param {number} userId - 用户 id
@@ -157,6 +187,26 @@ export function likeATrack(params) {
     url: '/like',
     method: 'get',
     params,
+  });
+}
+
+/**
+ * 相似歌曲
+ * 说明 : 调用此接口 , 传入歌曲 id, 可获得与该歌曲相似的歌曲列表
+ * 注意 : 返回的是旧版歌曲结构 (artists / album)，需再用 getTrackDetail 换取
+ * TrackList 所需的 ar / al 结构
+ * 对应 NeteaseCloudMusicApiEnhanced module/simi_song.js
+ * @param {number} id - 歌曲 id
+ * @param {number=} [limit=20] - 取出数量
+ */
+export function simiSongs(id, limit = 20) {
+  return request({
+    url: '/simi/song',
+    method: 'get',
+    params: {
+      id,
+      limit,
+    },
   });
 }
 

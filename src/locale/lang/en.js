@@ -48,6 +48,12 @@ export default {
       week: 'Latest Week',
       all: 'All Time',
     },
+    recentPlay: {
+      title: 'Recently Played',
+      songs: 'Songs',
+      playlists: 'Playlists',
+      albums: 'Albums',
+    },
     userProfileMenu: {
       settings: 'Settings',
       logout: 'Logout',
@@ -111,6 +117,9 @@ export default {
   next: {
     nowPlaying: 'Now Playing',
     nextUp: 'Next Up',
+    similarSongs: 'Similar Songs',
+    similarPlaylists: 'Similar Playlists',
+    addAllToQueue: 'Add All to Queue',
   },
   player: {
     like: 'Like',
@@ -224,6 +233,7 @@ export default {
     clearSongsCache: 'Clear Songs Cache',
     cacheCount: 'Cached {song} songs ({size})',
     showLyricsTranslation: 'Show lyrics translation',
+    showLyricsWordByWord: 'Word-by-word lyrics (where available)',
     showPlaylistsByAppleMusic: 'Show playlists by Apple Music',
     enableDiscordRichPresence: 'Enable Discord Rich Presence',
     enableGlobalShortcut: 'Enable Global Shortcut',

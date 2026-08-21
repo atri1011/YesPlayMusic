@@ -45,6 +45,12 @@ export default {
       week: '最近一周',
       all: '所有時間',
     },
+    recentPlay: {
+      title: '最近播放',
+      songs: '單曲',
+      playlists: '歌單',
+      albums: '專輯',
+    },
     userProfileMenu: {
       settings: '設定',
       logout: '登出',
@@ -108,6 +114,9 @@ export default {
   next: {
     nowPlaying: '正在播放',
     nextUp: '即將播放',
+    similarSongs: '相似歌曲',
+    similarPlaylists: '相似歌單',
+    addAllToQueue: '全部加入佇列',
   },
   player: {
     like: '喜歡',
@@ -221,6 +230,7 @@ export default {
     clearSongsCache: '清除歌曲快取',
     cacheCount: '已快取 {song} 首 ({size})',
     showLyricsTranslation: '顯示歌詞翻譯',
+    showLyricsWordByWord: '逐字歌詞（部分歌曲支援）',
     minimizeToTray: '最小化到工作列角落',
     showPlaylistsByAppleMusic: '首頁顯示來自 Apple Music 的歌單',
     enableDiscordRichPresence: '啟用 Discord Rich Presence',

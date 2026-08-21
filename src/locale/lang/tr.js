@@ -49,6 +49,12 @@ export default {
       week: 'Latest Week',
       all: 'All Time',
     },
+    recentPlay: {
+      title: 'Son Çalınanlar',
+      songs: 'Müzikler',
+      playlists: 'Çalma Listeleri',
+      albums: 'Albümler',
+    },
     userProfileMenu: {
       settings: 'Ayarlar',
       logout: 'Çıkış Yap',
@@ -108,6 +114,9 @@ export default {
   next: {
     nowPlaying: 'Şuan çalıyor',
     nextUp: 'Sıradaki',
+    similarSongs: 'Benzer Şarkılar',
+    similarPlaylists: 'Benzer Çalma Listeleri',
+    addAllToQueue: 'Tümünü Kuyruğa Ekle',
   },
   player: {
     like: 'Beğen',
@@ -220,6 +229,8 @@ export default {
     clearSongsCache: 'Müzik çerezlerini temizle',
     cacheCount: 'Çerezlenen {song} Müzikler ({size})',
     showLyricsTranslation: 'Müzik sözlerinin çevirilerini göster',
+    showLyricsWordByWord:
+      'Kelime kelime şarkı sözleri (destekleyen şarkılarda)',
     showPlaylistsByAppleMusic: "Apple Music'in Çalma Listelerini Göster",
     enableDiscordRichPresence: 'Discord gösterimini aktifleştir',
     showLibraryDefault: 'Kitaplık Varsayılanını göster',
