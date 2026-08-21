@@ -340,10 +340,11 @@ const YRC_MATCH_TOLERANCE = 0.6;
 const WORD_SWEEP_MIN_MS = 60;
 // 辉光在字唱完之后继续淡出的时间（毫秒）
 const WORD_GLOW_TAIL_MS = 260;
-// 取色饱和度低于此值的封面（黑白/单色）取出来的 hue 是噪声，退回主题色
+// 取色饱和度低于此值的封面（黑白/单色）取出来的 hue 是噪声，换下一个候选
 const ACCENT_MIN_SATURATION = 12;
-// 封面色直接用往往过灰或过艳，钳进这个区间保证可读性
-const ACCENT_SATURATION_RANGE = [45, 88];
+// 下限 55 是硬约束而非审美：高亮色只有色相跟着背景走，明度又被提到 74%，
+// 再不留住饱和度就会和接近纯白的未唱文字糊成一片，扫过的边界直接消失
+const ACCENT_SATURATION_RANGE = [55, 85];
 
 export default {
   name: 'Lyrics',
@@ -368,7 +369,7 @@ export default {
       lastProgressMs: 0,
       minimize: true,
       background: '',
-      // 封面主色的 H/S 分量，下发给 CSS 作为逐字高亮色。
+      // 逐字高亮色的 H/S 分量，下发给 CSS。
       // 只传 H/S、不传 L，是为了让 CSS 按当前主题深浅自行决定亮度；
       // 取色失败或封面是灰度时置 null，回退到 CSS 里的兜底值
       accentHue: null,
@@ -473,6 +474,12 @@ export default {
         clearInterval(this.lyricsInterval);
         this.$store.commit('enableScrolling', true);
       }
+    },
+    'settings.lyricsBackground'() {
+      // 这个开关决定高亮色跟背景走还是跟 Vibrant 走，切换后同一首歌也得重取，
+      // 否则要等到下一次切歌才生效
+      this.coverColorTrackId = null;
+      this.getCoverColor();
     },
   },
   created() {
@@ -760,7 +767,8 @@ export default {
       Vibrant.from(cover, { colorCount: 1 })
         .getPalette()
         .then(palette => {
-          // 高亮色与歌词背景共用这一次取色，但不共用开关：
+          // 高亮色与歌词背景共用这一次取色。开关只改高亮的取色来源
+          // （见 setAccentColor），不决定高亮要不要上色：
           // 背景是可选项，高亮色只要歌词页开着就得跟着封面走
           this.setAccentColor(palette);
           if (this.settings.lyricsBackground !== true) return;
@@ -778,13 +786,24 @@ export default {
         });
     },
     /**
-     * 从封面调色板里挑一个够鲜艳的色相作为逐字高亮色。
-     * 拿不到就置 null，让 CSS 的兜底值（主题蓝）生效。
+     * 挑一个色相作为逐字高亮色。
+     * 开着歌词背景时跟背景取同一支色卡（DarkMuted），高亮就成了背景色的
+     * 提亮版、和整屏同属一个色系；关着时页面是纯色 body 背景、无背景可跟，
+     * 改用 Vibrant 保住封面辨识度。
+     * 全部候选都太灰就置 null，让 CSS 的兜底值（主题蓝）生效。
      */
     setAccentColor(palette) {
-      const swatch = palette.Vibrant || palette.LightVibrant || palette.Muted;
-      const color = swatch?._rgb && Color.rgb(swatch._rgb);
-      if (!color || color.saturationl() < ACCENT_MIN_SATURATION) {
+      // 首选太灰（黑白封面的 DarkMuted 常常如此）时按顺位下探，
+      // 而不是直接放弃——封面里往往还有别的色卡能救
+      const candidates =
+        this.settings.lyricsBackground === true
+          ? [palette.DarkMuted, palette.Vibrant, palette.LightVibrant]
+          : [palette.Vibrant, palette.LightVibrant, palette.Muted];
+      const color = candidates
+        .filter(swatch => swatch?._rgb)
+        .map(swatch => Color.rgb(swatch._rgb))
+        .find(c => c.saturationl() >= ACCENT_MIN_SATURATION);
+      if (!color) {
         this.accentHue = null;
         return;
       }
@@ -821,22 +840,20 @@ export default {
 
   // 逐字高亮色。H/S 由封面取色下发到 .lyrics-container 覆盖，
   // 兜底值取 --color-primary(#335eea) 的 H/S；L 只在 CSS 里按主题决定，
-  // 这样 JS 完全不用感知当前是深色还是浅色
+  // 这样 JS 完全不用感知当前是深色还是浅色。
+  // 三个分量只在这里各自声明、不在本层合成成一个 hsl()：自定义属性的 var()
+  // 是在「声明所在元素」上就地替换的，在这层合成会把兜底蓝烧死成字面量，
+  // 后代再覆盖 H/S 也追不回来。合成必须放到真正用色的 span.word 上
   --lyric-accent-h: 226;
   --lyric-accent-s: 81%;
   --lyric-accent-l: 44%;
-  --lyric-accent: hsl(
-    var(--lyric-accent-h),
-    var(--lyric-accent-s),
-    var(--lyric-accent-l)
-  );
 }
 
 // 两条选择器分别覆盖「全局深色主题」和「开启歌词背景时歌词页自带 dark」
 [data-theme='dark'] .lyrics-page,
 .lyrics-page[data-theme='dark'] {
   // 深色底上要提亮才够跳，浅色底上则要压暗才读得清
-  --lyric-accent-l: 72%;
+  --lyric-accent-l: 74%;
 }
 
 .lyrics-background {
@@ -1165,6 +1182,15 @@ export default {
         // 字尾空格被关在盒子里，长英文歌词就找不到断行点而溢出
         display: inline;
         opacity: 1;
+
+        // 合成点必须在这里：H/S 来自 .lyrics-container 的封面取色、L 来自
+        // .lyrics-page 的主题分支，两者都是继承下来的，只有到了用色元素上
+        // 才同时可见。放在任何祖先上合成都会锁死成那一层看到的值
+        --lyric-accent: hsl(
+          var(--lyric-accent-h),
+          var(--lyric-accent-s),
+          var(--lyric-accent-l)
+        );
 
         // 未唱部分保持亮色、已唱部分换成封面主色，推进靠颜色边界在字形
         // 内部滑过而不是整字亮度跳变——这是它看起来连续的根本原因。
