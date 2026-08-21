@@ -319,10 +319,12 @@ import VueSlider from 'vue-slider-component';
 import ContextMenu from '@/components/ContextMenu.vue';
 import { formatTrackTime } from '@/utils/common';
 import { getLyricNew, getCloudLyric } from '@/api/track';
+import { getExternalYrc } from '@/api/externalLyric';
 import {
   lyricParser,
   copyLyric,
   parseLyric,
+  parseYrc,
   findCounterpartLyric,
 } from '@/utils/lyrics';
 import ButtonIcon from '@/components/ButtonIcon.vue';
@@ -620,6 +622,9 @@ export default {
               this.lyricType =
                 lyric.length > 0 ? 'translation' : 'romaPronunciation';
             }
+            if (yrc.length === 0) {
+              this.fillYrcFromExternalDB(this.currentTrack.id);
+            }
             return true;
           }
         }
@@ -632,6 +637,30 @@ export default {
       this.yrcLyric = [];
       this.ytlyric = [];
       this.yromalyric = [];
+    },
+    /**
+     * 网易没有逐字歌词时，去社区歌词库补一次。
+     *
+     * 不 await：这一步要走公网，让它挡在主歌词渲染前面不值得，拉到了再回填。
+     * 回填前必须确认还在放同一首歌——切歌比请求快时，回填会把上一首的逐字
+     * 歌词盖到当前歌上。
+     *
+     * @param {number} trackId 发起请求时正在播放的歌曲
+     */
+    async fillYrcFromExternalDB(trackId) {
+      if (this.settings.showLyricsWordByWord === false) return;
+      if (this.settings.enableExternalYrcDB === false) return;
+
+      const raw = await getExternalYrc({
+        id: trackId,
+        name: this.currentTrack?.name,
+        artists: (this.currentTrack?.ar || []).map(a => a.name).filter(Boolean),
+        durationMs: this.currentTrack?.dt,
+      });
+      if (!raw || this.currentTrack?.id !== trackId) return;
+
+      const parsed = parseYrc(raw);
+      if (parsed.length > 0) this.yrcLyric = parsed;
     },
     /**
      * 把主歌词与译文（或罗马音）按时间配对成可渲染的行。

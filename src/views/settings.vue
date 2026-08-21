@@ -259,6 +259,22 @@
       </div>
       <div class="item">
         <div class="left">
+          <div class="title">{{ $t('settings.enableExternalYrcDB') }}</div>
+        </div>
+        <div class="right">
+          <div class="toggle">
+            <input
+              id="enable-external-yrc-db"
+              v-model="enableExternalYrcDB"
+              type="checkbox"
+              name="enable-external-yrc-db"
+            />
+            <label for="enable-external-yrc-db"></label>
+          </div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="left">
           <div class="title">{{ $t('settings.showLyricsTranslation') }}</div>
         </div>
         <div class="right">
@@ -1141,6 +1157,18 @@ export default {
       set(value) {
         this.$store.commit('updateSettings', {
           key: 'showLyricsWordByWord',
+          value,
+        });
+      },
+    },
+    enableExternalYrcDB: {
+      get() {
+        // 老版本 localStorage 里没有这个键，缺省视为开启
+        return this.settings.enableExternalYrcDB !== false;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', {
+          key: 'enableExternalYrcDB',
           value,
         });
       },

@@ -231,6 +231,8 @@ export default {
     showLyricsTranslation: 'Müzik sözlerinin çevirilerini göster',
     showLyricsWordByWord:
       'Kelime kelime şarkı sözleri (destekleyen şarkılarda)',
+    enableExternalYrcDB:
+      'NetEase şarkı sözü sunmadığında dış kaynakları (AMLL / QQ Music) kullan',
     showPlaylistsByAppleMusic: "Apple Music'in Çalma Listelerini Göster",
     enableDiscordRichPresence: 'Discord gösterimini aktifleştir',
     showLibraryDefault: 'Kitaplık Varsayılanını göster',

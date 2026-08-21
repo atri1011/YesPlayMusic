@@ -19,6 +19,7 @@ import {
 } from '@/utils/platform';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import { startNeteaseMusicApi } from './electron/services';
+import { getQqYrc } from './electron/qqLyric';
 import { initIpcMain } from './electron/ipcMain.js';
 import { createMenu } from './electron/menu';
 import { createTray } from '@/electron/tray';
@@ -155,6 +156,27 @@ class Background {
     const expressApp = express();
     expressApp.use('/', express.static(__dirname + '/'));
     expressApp.use('/api', expressProxy('http://127.0.0.1:10754'));
+    // QQ 音乐逐字歌词兜底。放在主进程是因为 QRC 要用 Node 的 zlib 解压，
+    // 而且 u.y.qq.com 不返回 CORS 头，渲染进程直连拿不到
+    expressApp.get('/qq-lyric', async (req, res) => {
+      const { name, artist, duration } = req.query;
+      if (!name || !duration) return res.status(400).end();
+      try {
+        const yrc = await getQqYrc({
+          name,
+          artists: String(artist || '')
+            .split(',')
+            .filter(Boolean),
+          durationMs: Number(duration),
+        });
+        // 404 表示 QQ 确实没有这首的逐字歌词，调用方据此写「查过没有」的缓存；
+        // 上游出错要用 502 区分开，免得一次网络抖动被记成没有
+        if (!yrc) return res.status(404).end();
+        res.type('text/plain').send(yrc);
+      } catch (error) {
+        res.status(502).end();
+      }
+    });
     expressApp.use('/player', (req, res) => {
       this.window.webContents
         .executeJavaScript('window.yesplaymusic.player')

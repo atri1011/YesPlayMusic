@@ -25,6 +25,7 @@ let localStorage = {
     nyancatStyle: false,
     showLyricsTranslation: true,
     showLyricsWordByWord: true,
+    enableExternalYrcDB: true,
     lyricsBackground: true,
     enableOsdlyricsSupport: false,
     closeAppOption: 'ask',

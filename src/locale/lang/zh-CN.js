@@ -235,6 +235,7 @@ export default {
     cacheCount: '已缓存 {song} 首 ({size})',
     showLyricsTranslation: '显示歌词翻译',
     showLyricsWordByWord: '逐字歌词（部分歌曲支持）',
+    enableExternalYrcDB: '网易云缺失时从外部歌词库补齐逐字（AMLL / QQ 音乐）',
     showPlaylistsByAppleMusic: '首页显示来自 Apple Music 的歌单',
     enableDiscordRichPresence: '启用 Discord Rich Presence',
     enableGlobalShortcut: '启用全局快捷键',

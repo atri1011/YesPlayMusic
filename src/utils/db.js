@@ -5,6 +5,11 @@ import store from '@/store';
 
 const db = new Dexie('yesplaymusic');
 
+// 外部逐字歌词库（AMLL）的查询结果，存的是原始 yrc 文本或 null（表示该库没有）
+db.version(6).stores({
+  externalYrc: '&id, updateTime',
+});
+
 // lyricNew 与 lyric 分表存储：/lyric/new 的响应是 /lyric 的超集（多出 yrc /
 // ytlrc / yromalrc），共用一张表会让先写入的一方决定形状，导致逐字歌词时有时无。
 db.version(5).stores({
@@ -421,6 +426,41 @@ export function getLyricNewFromCache(id) {
   return db.lyricNew.get(Number(id)).then(result => {
     if (!result) return undefined;
     return result.lyrics;
+  });
+}
+
+// 外部歌词库「查过但没有」也要记下来，否则网易没逐字的歌每次播放都要白跑一次
+// 公网请求。命中长期有效，未命中则留有效期——社区随时可能补投这首歌。
+const EXTERNAL_YRC_MISS_TTL = 7 * 24 * 60 * 60 * 1000;
+
+// 抓取或加工歌词的方式一变（比如给 QQ 源加了时间轴修正），旧记录就过时了。
+// 版本号对不上直接当没缓存，重新拉一遍，省得用户还要手动清缓存
+const EXTERNAL_YRC_CACHE_VERSION = 2;
+
+/**
+ * @param {number|string} id
+ * @param {string|null} yrc 原始 yrc 文本，null 表示该库确认没有这首歌
+ */
+export function cacheExternalYrc(id, yrc) {
+  db.externalYrc.put({
+    id: Number(id),
+    yrc,
+    version: EXTERNAL_YRC_CACHE_VERSION,
+    updateTime: new Date().getTime(),
+  });
+}
+
+/**
+ * @returns {Promise<string|null|undefined>} 文本 / null（确认没有）/ undefined（没查过、记录过期或版本过时）
+ */
+export function getExternalYrcFromCache(id) {
+  return db.externalYrc.get(Number(id)).then(result => {
+    if (!result) return undefined;
+    if (result.version !== EXTERNAL_YRC_CACHE_VERSION) return undefined;
+    const expired =
+      result.yrc === null &&
+      new Date().getTime() - result.updateTime > EXTERNAL_YRC_MISS_TTL;
+    return expired ? undefined : result.yrc;
   });
 }
 

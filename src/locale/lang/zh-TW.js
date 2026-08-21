@@ -231,6 +231,7 @@ export default {
     cacheCount: '已快取 {song} 首 ({size})',
     showLyricsTranslation: '顯示歌詞翻譯',
     showLyricsWordByWord: '逐字歌詞（部分歌曲支援）',
+    enableExternalYrcDB: '網易雲缺少時從外部歌詞庫補齊逐字（AMLL / QQ 音樂）',
     minimizeToTray: '最小化到工作列角落',
     showPlaylistsByAppleMusic: '首頁顯示來自 Apple Music 的歌單',
     enableDiscordRichPresence: '啟用 Discord Rich Presence',

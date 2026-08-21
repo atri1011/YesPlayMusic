@@ -234,6 +234,8 @@ export default {
     cacheCount: 'Cached {song} songs ({size})',
     showLyricsTranslation: 'Show lyrics translation',
     showLyricsWordByWord: 'Word-by-word lyrics (where available)',
+    enableExternalYrcDB:
+      'Fall back to external lyrics sources (AMLL / QQ Music) when NetEase has none',
     showPlaylistsByAppleMusic: 'Show playlists by Apple Music',
     enableDiscordRichPresence: 'Enable Discord Rich Presence',
     enableGlobalShortcut: 'Enable Global Shortcut',
