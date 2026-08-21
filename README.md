@@ -24,7 +24,7 @@
   <p align="center">
     高颜值的第三方网易云播放器
     <br />
-    <a href="https://music.qier222.com" target="blank"><strong>🌎 访问DEMO</strong></a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="https://music.qier222.com" target="blank"><strong>🌎 原项目 DEMO</strong></a>&nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="#%EF%B8%8F-安装" target="blank"><strong>📦️ 下载安装包</strong></a>&nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="https://t.me/yesplaymusic" target="blank"><strong>💬 加入交流群</strong></a>
     <br />
@@ -34,18 +34,24 @@
 
 [![Library][library-screenshot]](https://music.qier222.com)
 
-## 全新版本
+## 🔀 关于本仓库
 
-全新 2.0 Alpha 测试版已发布，欢迎前往 [Releases](https://github.com/qier222/YesPlayMusic/releases) 页面下载。
-当前版本将会进入维护模式，除重大 bug 修复外，不会再更新新功能。
+本仓库是 [qier222/YesPlayMusic](https://github.com/qier222/YesPlayMusic) 的 fork，由 [@atri1011](https://github.com/atri1011) 维护，在原项目 1.x 代码基础上继续开发新功能。
+
+- 原项目：[qier222/YesPlayMusic](https://github.com/qier222/YesPlayMusic) —— 已进入维护模式，除重大 bug 修复外不再更新功能；其全新 2.0 Alpha 测试版见原项目 [Releases](https://github.com/qier222/YesPlayMusic/releases)。
+- 本仓库：[atri1011/YesPlayMusic](https://github.com/atri1011/YesPlayMusic) —— 安装包、Issue 与 Pull request 请走这里。
+
+原项目的版权与署名信息全部保留，详见文末「开源许可」与「灵感来源」。
 
 ## ✨ 特性
 
 - ✅ 使用 Vue.js 全家桶开发
 - 🔴 网易云账号登录（扫码/手机/邮箱登录）
 - 📺 支持 MV 播放
-- 📃 支持歌词显示
+- 📃 支持歌词显示，含逐字歌词（部分歌曲支持，可在设置中关闭）
 - 📻 支持私人 FM / 每日推荐歌曲
+- 🎯 播放队列页展示相似歌曲与相似歌单
+- 🕘 音乐库支持「最近播放」（单曲 / 歌单 / 专辑）
 - 🚫🤝 无任何社交功能
 - 🌎️ 海外用户可直接播放（需要登录网易云账号）
 - 🔐 支持 [UnblockNeteaseMusic](https://github.com/UnblockNeteaseMusic/server#音源清单)，自动使用[各类音源](https://github.com/UnblockNeteaseMusic/server#音源清单)替换变灰歌曲链接 （网页版不支持）
@@ -63,14 +69,16 @@
 
 ## 📦️ 安装
 
-Electron 版本由 [@hawtim](https://github.com/hawtim) 和 [@qier222](https://github.com/qier222) 适配并维护，支持 macOS、Windows、Linux。
+Electron 版本最初由 [@hawtim](https://github.com/hawtim) 和 [@qier222](https://github.com/qier222) 适配并维护，支持 macOS、Windows、Linux。
 
-访问本项目的 [Releases](https://github.com/qier222/YesPlayMusic/releases)
+访问本仓库的 [Releases](https://github.com/atri1011/YesPlayMusic/releases)
 页面下载安装包。
 
 - macOS 用户可以通过 Homebrew 来安装：`brew install --cask yesplaymusic`
 
 - Windows 用户可以通过 Scoop 来安装：`scoop install extras/yesplaymusic`
+
+> Homebrew 与 Scoop 装的是原项目发布的版本，不含本仓库的新功能，需要新功能请从上面的 Releases 下载。
 
 ## 同类项目（排名无先后）
 
@@ -84,7 +92,7 @@ Electron 版本由 [@hawtim](https://github.com/hawtim) 和 [@qier222](https://g
 
 除了下载安装包使用，你还可以将本项目部署到 Vercel 或你的服务器上。下面是部署到 Vercel 的方法。
 
-本项目的 Demo (https://music.qier222.com) 就是部署在 Vercel 上的网站。
+原项目的 Demo (https://music.qier222.com) 就是部署在 Vercel 上的网站。
 
 [![Powered by Vercel](https://www.datocms-assets.com/31049/1618983297-powered-by-vercel.svg)](https://vercel.com/?utm_source=ohmusic&utm_campaign=oss)
 
@@ -123,7 +131,7 @@ Electron 版本由 [@hawtim](https://github.com/hawtim) 和 [@qier222](https://g
 2. 克隆本仓库
 
 ```sh
-git clone --recursive https://github.com/qier222/YesPlayMusic.git
+git clone --recursive https://github.com/atri1011/YesPlayMusic.git
 ```
 
 3. 安装依赖
@@ -188,7 +196,7 @@ YesPlayMusic 地址为 `http://localhost`
 2. 在 Replit shell 中运行以下命令
 
 ```sh
-bash <(curl -s -L https://raw.githubusercontent.com/qier222/YesPlayMusic/main/install-replit.sh)
+bash <(curl -s -L https://raw.githubusercontent.com/atri1011/YesPlayMusic/master/install-replit.sh)
 ```
 
 3. 首次运行成功后，只需点击绿色按钮 `Run` 即可再次运行
@@ -206,7 +214,7 @@ cd /home/runner/${REPL_SLUG}/music && yarn install && yarn run build
 1. 打包 Electron 需要用到 Node.js 和 Yarn。可前往 [Node.js 官网](https://nodejs.org/zh-cn/) 下载安装包。安装 Node.js
    后可在终端里执行 `npm install -g yarn` 来安装 Yarn。
 
-2. 使用 `git clone --recursive https://github.com/qier222/YesPlayMusic.git` 克隆本仓库到本地。
+2. 使用 `git clone --recursive https://github.com/atri1011/YesPlayMusic.git` 克隆本仓库到本地。
 
 3. 使用 `yarn install` 安装项目依赖。
 
@@ -250,9 +258,9 @@ yarn netease_api:run
 
 ## ☑️ Todo
 
-查看 Todo 请访问本项目的 [Projects](https://github.com/qier222/YesPlayMusic/projects/1)
+原项目的 Todo 见 [qier222/YesPlayMusic Projects](https://github.com/qier222/YesPlayMusic/projects/1)。
 
-欢迎提 Issue 和 Pull request。
+本仓库的 Issue 和 Pull request 请提到 [atri1011/YesPlayMusic](https://github.com/atri1011/YesPlayMusic/issues)，欢迎参与。
 
 ## 📜 开源许可
 
@@ -260,7 +268,11 @@ yarn netease_api:run
 
 基于 [MIT license](https://opensource.org/licenses/MIT) 许可进行开源。
 
+本仓库 fork 自 [qier222/YesPlayMusic](https://github.com/qier222/YesPlayMusic)，原作者 [@qier222](https://github.com/qier222) 保留其著作权，本仓库沿用同一许可协议。
+
 ## 灵感来源
+
+原项目 [qier222/YesPlayMusic](https://github.com/qier222/YesPlayMusic)
 
 API 源代码来自 [Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)
 
