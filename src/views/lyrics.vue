@@ -233,7 +233,7 @@
             v-show="!noLyric"
             ref="lyricsContainer"
             class="lyrics-container"
-            :style="lyricFontSize"
+            :style="lyricContainerStyle"
           >
             <div id="line-1" class="line"></div>
             <div
@@ -335,8 +335,15 @@ import locale from '@/locale';
 // yrc 的行首时间与 lrc 不同源（实测偏差可达 330ms），退回 lrc 系译文时
 // 允许的最大就近匹配误差（秒）
 const YRC_MATCH_TOLERANCE = 0.6;
-// 单个字点亮所用的时长（毫秒）；比这更长的字不会一直渐变，避免拖沓
-const WORD_RAMP_MS = 260;
+// 扫过时长直接取该字的真实时长，只保底不封顶：长拖腔就该慢慢扫过去。
+// durationMs 为 0 的异常项兜底到这个值，免得一闪而过
+const WORD_SWEEP_MIN_MS = 60;
+// 辉光在字唱完之后继续淡出的时间（毫秒）
+const WORD_GLOW_TAIL_MS = 260;
+// 取色饱和度低于此值的封面（黑白/单色）取出来的 hue 是噪声，退回主题色
+const ACCENT_MIN_SATURATION = 12;
+// 封面色直接用往往过灰或过艳，钳进这个区间保证可读性
+const ACCENT_SATURATION_RANGE = [45, 88];
 
 export default {
   name: 'Lyrics',
@@ -361,6 +368,13 @@ export default {
       lastProgressMs: 0,
       minimize: true,
       background: '',
+      // 封面主色的 H/S 分量，下发给 CSS 作为逐字高亮色。
+      // 只传 H/S、不传 L，是为了让 CSS 按当前主题深浅自行决定亮度；
+      // 取色失败或封面是灰度时置 null，回退到 CSS 里的兜底值
+      accentHue: null,
+      accentSaturation: null,
+      // 已经取过色的歌曲 id，避免反复开关歌词页时对同一首重复取色
+      coverColorTrackId: null,
       date: this.formatTime(new Date()),
       isFullscreen: !!document.fullscreenElement,
       rightClickLyric: null,
@@ -419,10 +433,15 @@ export default {
         this.yromalyric.length === 0
       );
     },
-    lyricFontSize() {
-      return {
+    lyricContainerStyle() {
+      const style = {
         fontSize: `${this.$store.state.settings.lyricFontSize || 28}px`,
       };
+      if (this.accentHue !== null) {
+        style['--lyric-accent-h'] = this.accentHue;
+        style['--lyric-accent-s'] = `${this.accentSaturation}%`;
+      }
+      return style;
     },
     noLyric() {
       return this.lyric.length == 0;
@@ -446,6 +465,8 @@ export default {
     },
     showLyrics(show) {
       if (show) {
+        // 关着的时候切歌不会取色，打开时补上
+        this.getCoverColor();
         this.setLyricsInterval();
         this.$store.commit('enableScrolling', false);
       } else {
@@ -632,12 +653,14 @@ export default {
         });
     },
     /**
-     * 逐字动画：每个字在自己的时间点亮起。
+     * 逐字动画：颜色边界在字形内部从左往右扫过，速度跟该字的真实时长走。
      * 延迟为负数时 CSS 会让动画从中途开始播放，因此从行中间进入也能对上。
+     * 两条动画（扫过 / 辉光）共用同一个延迟，辉光多留一段尾巴淡出。
      */
     wordAnimationStyle(word) {
+      const sweepMs = Math.max(word.durationMs, WORD_SWEEP_MIN_MS);
       return {
-        animationDuration: `${Math.min(word.durationMs, WORD_RAMP_MS)}ms`,
+        animationDuration: `${sweepMs}ms, ${sweepMs + WORD_GLOW_TAIL_MS}ms`,
         animationDelay: `${word.startMs - this.highlightLineStartMs}ms`,
       };
     },
@@ -727,16 +750,49 @@ export default {
       this.player.switchShuffle();
     },
     getCoverColor() {
-      if (this.settings.lyricsBackground !== true) return;
-      const cover = this.currentTrack.al?.picUrl + '?param=256y256';
+      if (!this.currentTrack.al?.picUrl) return;
+      // 歌词页是 v-show 常驻的，取色却只有它可见（或开了歌词背景）时才有人用。
+      // 关着的时候跳过，等真正打开时再补算，免得每次切歌都白跑一趟 Vibrant
+      if (!this.showLyrics && this.settings.lyricsBackground !== true) return;
+      if (this.coverColorTrackId === this.currentTrack.id) return;
+      this.coverColorTrackId = this.currentTrack.id;
+      const cover = this.currentTrack.al.picUrl + '?param=256y256';
       Vibrant.from(cover, { colorCount: 1 })
         .getPalette()
         .then(palette => {
+          // 高亮色与歌词背景共用这一次取色，但不共用开关：
+          // 背景是可选项，高亮色只要歌词页开着就得跟着封面走
+          this.setAccentColor(palette);
+          if (this.settings.lyricsBackground !== true) return;
+          if (!palette.DarkMuted?._rgb) return;
           const originColor = Color.rgb(palette.DarkMuted._rgb);
           const color = originColor.darken(0.1).rgb().string();
           const color2 = originColor.lighten(0.28).rotate(-30).rgb().string();
           this.background = `linear-gradient(to top left, ${color}, ${color2})`;
+        })
+        // 封面下载失败或解码失败时 Vibrant 会 reject
+        .catch(() => {
+          // 清掉标记，下次打开歌词页可以重试（可能只是临时的网络失败）
+          this.coverColorTrackId = null;
+          this.accentHue = null;
         });
+    },
+    /**
+     * 从封面调色板里挑一个够鲜艳的色相作为逐字高亮色。
+     * 拿不到就置 null，让 CSS 的兜底值（主题蓝）生效。
+     */
+    setAccentColor(palette) {
+      const swatch = palette.Vibrant || palette.LightVibrant || palette.Muted;
+      const color = swatch?._rgb && Color.rgb(swatch._rgb);
+      if (!color || color.saturationl() < ACCENT_MIN_SATURATION) {
+        this.accentHue = null;
+        return;
+      }
+      const [min, max] = ACCENT_SATURATION_RANGE;
+      this.accentHue = Math.round(color.hue());
+      this.accentSaturation = Math.round(
+        Math.min(Math.max(color.saturationl(), min), max)
+      );
     },
     hasList() {
       return hasListSource();
@@ -762,6 +818,25 @@ export default {
   background: var(--color-body-bg);
   display: flex;
   clip: rect(auto, auto, auto, auto);
+
+  // 逐字高亮色。H/S 由封面取色下发到 .lyrics-container 覆盖，
+  // 兜底值取 --color-primary(#335eea) 的 H/S；L 只在 CSS 里按主题决定，
+  // 这样 JS 完全不用感知当前是深色还是浅色
+  --lyric-accent-h: 226;
+  --lyric-accent-s: 81%;
+  --lyric-accent-l: 44%;
+  --lyric-accent: hsl(
+    var(--lyric-accent-h),
+    var(--lyric-accent-s),
+    var(--lyric-accent-l)
+  );
+}
+
+// 两条选择器分别覆盖「全局深色主题」和「开启歌词背景时歌词页自带 dark」
+[data-theme='dark'] .lyrics-page,
+.lyrics-page[data-theme='dark'] {
+  // 深色底上要提亮才够跳，浅色底上则要压暗才读得清
+  --lyric-accent-l: 72%;
 }
 
 .lyrics-background {
@@ -1054,8 +1129,8 @@ export default {
           font-size: 0.925em;
         }
 
-        // 逐字歌词的每个字自行控制不透明度。这里必须显式复位，
-        // 否则会与外层 .words 的 opacity 相乘，未唱到的字暗得看不见。
+        // 未高亮行的字整体由外层 .words 调暗即可。这里必须把 opacity 显式
+        // 复位，否则会与外层的 opacity 相乘，字暗得看不见
         span.word {
           opacity: 1;
           transition: none;
@@ -1089,10 +1164,34 @@ export default {
         // 必须压回 inline：上面的 inline-block 会让每个字变成原子盒子，
         // 字尾空格被关在盒子里，长英文歌词就找不到断行点而溢出
         display: inline;
-        opacity: 0.32;
-        animation-name: lyric-word-active;
+        opacity: 1;
+
+        // 未唱部分保持亮色、已唱部分换成封面主色，推进靠颜色边界在字形
+        // 内部滑过而不是整字亮度跳变——这是它看起来连续的根本原因。
+        // 渐变图铺成字宽的两倍多，动 background-position 把边界推过去：
+        // 设字宽 w、柔边宽 f = 0.4em，图总宽 2w + f，则 50% ∓ 0.2em
+        // 正好是已唱区右端(w)与未唱区左端(w + f)。
+        // 柔边用 em 而非百分比是关键：百分比会让单个汉字柔边过宽、
+        // 长英文单词柔边过窄，em 则跟着 lyricFontSize 一起缩放
+        background-image: linear-gradient(
+          to right,
+          var(--lyric-accent) 0,
+          var(--lyric-accent) calc(50% - 0.2em),
+          var(--color-text) calc(50% + 0.2em),
+          var(--color-text) 100%
+        );
+        background-size: calc(200% + 0.4em) 100%;
+        background-repeat: no-repeat;
+        background-position: 100% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+
+        animation-name: lyric-word-sweep, lyric-word-glow;
         animation-timing-function: linear;
-        animation-fill-mode: forwards;
+        // both 而非 forwards：延迟期间也要保持 from 帧（整字未唱），
+        // 否则未轮到的字会先按静态值渲染再跳一下
+        animation-fill-mode: both;
       }
     }
   }
@@ -1115,13 +1214,39 @@ export default {
   animation-play-state: paused;
 }
 
-@keyframes lyric-word-active {
+// 100% → 0%：渐变图右端对齐时整字未唱，左端对齐时整字已唱，
+// 中间过程就是颜色边界从字形左缘连续推到右缘
+@keyframes lyric-word-sweep {
   from {
-    opacity: 0.32;
+    background-position: 100% 0;
   }
 
   to {
-    opacity: 1;
+    background-position: 0 0;
+  }
+}
+
+// 必须用 filter: drop-shadow 而不是 text-shadow：字的填充色是 transparent
+// （靠 background-clip: text 上色），text-shadow 会从字心透出来糊成一团；
+// drop-shadow 作用在已渲染结果的 alpha 上，形状才是对的。
+// 两端写 none 而非 drop-shadow(0 0 0 transparent)，配合 fill-mode: both，
+// 动画窗口之外整字没有 filter pass，不会给整行常驻十几个滤镜层
+@keyframes lyric-word-glow {
+  0%,
+  100% {
+    filter: none;
+  }
+
+  40% {
+    filter: drop-shadow(
+      0 0 0.28em
+        hsla(
+          var(--lyric-accent-h),
+          var(--lyric-accent-s),
+          var(--lyric-accent-l),
+          0.5
+        )
+    );
   }
 }
 
