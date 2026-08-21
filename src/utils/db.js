@@ -5,6 +5,12 @@ import store from '@/store';
 
 const db = new Dexie('yesplaymusic');
 
+// 歌单详情缓存。打开歌单时先用它把内容铺出来，网络回来再校正，
+// 避免整页空白干等一次跨公网的 /playlist/detail。
+db.version(7).stores({
+  playlist: '&id, updateTime',
+});
+
 // 外部逐字歌词库（AMLL）的查询结果，存的是原始 yrc 文本或 null（表示该库没有）
 db.version(6).stores({
   externalYrc: '&id, updateTime',
@@ -477,6 +483,54 @@ export function getAlbumFromCache(id) {
     if (!result) return undefined;
     return result.album;
   });
+}
+
+// 缓存只是「先给眼睛一点东西看」，命中后照样发请求校正，所以 TTL 给得宽松；
+// 网络慢或断网时，展示一份稍旧的歌单也远好过一片空白。
+const PLAYLIST_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+// tracks 只留首屏够用的量，其余翻页时再拉，避免单条记录膨胀到几 MB
+const PLAYLIST_CACHE_MAX_TRACKS = 100;
+const PLAYLIST_CACHE_MAX_ENTRIES = 50;
+
+export function cachePlaylist(id, playlist) {
+  if (!id || !playlist) return;
+  db.playlist
+    .put({
+      id: Number(id),
+      playlist: {
+        ...playlist,
+        tracks: (playlist.tracks || []).slice(0, PLAYLIST_CACHE_MAX_TRACKS),
+        // trackIds 只用到 id，整条留下来的话上万首的歌单能占到 1MB
+        trackIds: (playlist.trackIds || []).map(t => ({ id: t.id })),
+      },
+      updateTime: new Date().getTime(),
+    })
+    .then(prunePlaylistCache)
+    .catch(err => console.debug('[debug][db.js] cachePlaylist failed', err));
+}
+
+export function getPlaylistFromCache(id) {
+  if (!id) return Promise.resolve(undefined);
+  return db.playlist
+    .get(Number(id))
+    .then(result => {
+      if (!result) return undefined;
+      const expired =
+        new Date().getTime() - result.updateTime > PLAYLIST_CACHE_TTL;
+      return expired ? undefined : result.playlist;
+    })
+    .catch(() => undefined);
+}
+
+// 浏览过的歌单会一直累积，按 updateTime 淘汰最旧的，保住最近常看的那批
+async function prunePlaylistCache() {
+  const count = await db.playlist.count();
+  if (count <= PLAYLIST_CACHE_MAX_ENTRIES) return;
+  const stale = await db.playlist
+    .orderBy('updateTime')
+    .limit(count - PLAYLIST_CACHE_MAX_ENTRIES)
+    .primaryKeys();
+  await db.playlist.bulkDelete(stale);
 }
 
 /**

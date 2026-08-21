@@ -2,8 +2,8 @@
   <div
     class="cover"
     :class="{ 'cover-hover': coverHover }"
-    @mouseover="focus = true"
-    @mouseleave="focus = false"
+    @mouseover="handleMouseOver"
+    @mouseleave="handleMouseLeave"
     @click="clickCoverToPlay ? play() : goTo()"
   >
     <div class="cover-container">
@@ -29,6 +29,11 @@
 </template>
 
 <script>
+import { prefetchPlaylistDetail } from '@/api/playlist';
+
+// 鼠标扫过一整排封面不该触发一串请求，停留够久才认为是「想点它」
+const PREFETCH_HOVER_DELAY = 120;
+
 export default {
   props: {
     id: { type: Number, required: true },
@@ -46,6 +51,7 @@ export default {
   data() {
     return {
       focus: false,
+      prefetchTimer: null,
     };
   },
   computed: {
@@ -71,7 +77,24 @@ export default {
       return styles;
     },
   },
+  beforeDestroy() {
+    clearTimeout(this.prefetchTimer);
+  },
   methods: {
+    handleMouseOver() {
+      this.focus = true;
+      // 趁着「看到 → 点下去」这几百毫秒把歌单详情先拉回来，点开时基本已就绪
+      if (this.type !== 'playlist' || this.clickCoverToPlay) return;
+      clearTimeout(this.prefetchTimer);
+      this.prefetchTimer = setTimeout(
+        () => prefetchPlaylistDetail(this.id),
+        PREFETCH_HOVER_DELAY
+      );
+    },
+    handleMouseLeave() {
+      this.focus = false;
+      clearTimeout(this.prefetchTimer);
+    },
     play() {
       const player = this.$store.state.player;
       const playActions = {

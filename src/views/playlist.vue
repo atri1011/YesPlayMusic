@@ -1,55 +1,148 @@
 <template>
-  <div v-show="show" class="playlist">
-    <div
-      v-if="specialPlaylistInfo === undefined && !isLikeSongsPage"
-      class="playlist-info"
-    >
-      <Cover
-        :id="playlist.id"
-        :image-url="playlist.coverImgUrl | resizeImage(1024)"
-        :show-play-button="true"
-        :always-show-shadow="true"
-        :click-cover-to-play="true"
-        :fixed-size="288"
-        type="playlist"
-        :cover-hover="false"
-        :play-button-size="18"
-        @click.right.native="openMenu"
-      />
-      <div class="info">
-        <div class="title" @click.right="openMenu"
-          ><span v-if="playlist.privacy === 10" class="lock-icon">
-            <svg-icon icon-class="lock" /></span
-          >{{ playlist.name }}</div
+  <div class="playlist">
+    <div v-if="!show" class="playlist-skeleton">
+      <div v-if="!isLikeSongsPage" class="sk-header">
+        <div class="sk-cover"></div>
+        <div class="sk-info">
+          <div class="sk-line sk-name"></div>
+          <div class="sk-line sk-artist"></div>
+          <div class="sk-line sk-meta"></div>
+          <div class="sk-line sk-desc"></div>
+          <div class="sk-line sk-desc last"></div>
+          <div class="sk-buttons">
+            <div class="sk-button"></div>
+            <div class="sk-button round"></div>
+            <div class="sk-button round"></div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="sk-line sk-user-title"></div>
+      <div
+        v-for="n in 9"
+        :key="n"
+        class="sk-track"
+        :style="{ '--stagger-index': n - 1 }"
+      >
+        <div class="sk-track-cover"></div>
+        <div class="sk-track-text">
+          <div class="sk-line sk-track-name"></div>
+          <div class="sk-line sk-track-artist"></div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="show" class="playlist-body">
+      <div
+        v-if="specialPlaylistInfo === undefined && !isLikeSongsPage"
+        class="playlist-info"
+      >
+        <Cover
+          :id="playlist.id"
+          :image-url="playlist.coverImgUrl | resizeImage(1024)"
+          :show-play-button="true"
+          :always-show-shadow="true"
+          :click-cover-to-play="true"
+          :fixed-size="288"
+          type="playlist"
+          :cover-hover="false"
+          :play-button-size="18"
+          @click.right.native="openMenu"
+        />
+        <div class="info">
+          <div class="title" @click.right="openMenu"
+            ><span v-if="playlist.privacy === 10" class="lock-icon">
+              <svg-icon icon-class="lock" /></span
+            >{{ playlist.name }}</div
+          >
+          <div class="artist">
+            Playlist by
+            <span
+              v-if="
+                [
+                  5277771961, 5277965913, 5277969451, 5277778542, 5278068783,
+                ].includes(playlist.id)
+              "
+              style="font-weight: 600"
+              >Apple Music</span
+            >
+            <a
+              v-else
+              :href="`https://music.163.com/#/user/home?id=${playlist.creator.userId}`"
+              target="blank"
+              >{{ playlist.creator.nickname }}</a
+            >
+          </div>
+          <div class="date-and-count">
+            {{ $t('playlist.updatedAt') }}
+            {{ playlist.updateTime | formatDate }} · {{ playlist.trackCount }}
+            {{ $t('common.songs') }}
+          </div>
+          <div class="description" @click="toggleFullDescription">
+            {{ playlist.description }}
+          </div>
+          <div class="buttons">
+            <ButtonTwoTone icon-class="play" @click.native="playPlaylistByID()">
+              {{ $t('common.play') }}
+            </ButtonTwoTone>
+            <ButtonTwoTone
+              v-if="playlist.creator.userId !== data.user.userId"
+              :icon-class="playlist.subscribed ? 'heart-solid' : 'heart'"
+              :icon-button="true"
+              :horizontal-padding="0"
+              :color="playlist.subscribed ? 'blue' : 'grey'"
+              :text-color="playlist.subscribed ? '#335eea' : ''"
+              :background-color="
+                playlist.subscribed ? 'var(--color-secondary-bg)' : ''
+              "
+              @click.native="likePlaylist"
+            >
+            </ButtonTwoTone>
+            <ButtonTwoTone
+              icon-class="more"
+              :icon-button="true"
+              :horizontal-padding="0"
+              color="grey"
+              @click.native="openMenu"
+            >
+            </ButtonTwoTone>
+          </div>
+        </div>
+        <div v-if="displaySearchInPlaylist" class="search-box">
+          <div class="container" :class="{ active: inputFocus }">
+            <svg-icon icon-class="search" />
+            <div class="input">
+              <input
+                v-model.trim="inputSearchKeyWords"
+                v-focus
+                :placeholder="inputFocus ? '' : $t('playlist.search')"
+                @input="inputDebounce()"
+                @focus="inputFocus = true"
+                @blur="inputFocus = false"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-if="specialPlaylistInfo !== undefined" class="special-playlist">
+        <div
+          class="title"
+          :class="specialPlaylistInfo.gradient"
+          @click.right="openMenu"
         >
-        <div class="artist">
-          Playlist by
-          <span
-            v-if="
-              [
-                5277771961, 5277965913, 5277969451, 5277778542, 5278068783,
-              ].includes(playlist.id)
-            "
-            style="font-weight: 600"
-            >Apple Music</span
-          >
-          <a
-            v-else
-            :href="`https://music.163.com/#/user/home?id=${playlist.creator.userId}`"
-            target="blank"
-            >{{ playlist.creator.nickname }}</a
-          >
+          <!-- <img :src="playlist.coverImgUrl | resizeImage" /> -->
+          {{ specialPlaylistInfo.name }}
         </div>
-        <div class="date-and-count">
-          {{ $t('playlist.updatedAt') }}
-          {{ playlist.updateTime | formatDate }} · {{ playlist.trackCount }}
-          {{ $t('common.songs') }}
+        <div class="subtitle"
+          >{{ playlist.englishTitle }} · {{ playlist.updateFrequency }}
         </div>
-        <div class="description" @click="toggleFullDescription">
-          {{ playlist.description }}
-        </div>
+
         <div class="buttons">
-          <ButtonTwoTone icon-class="play" @click.native="playPlaylistByID()">
+          <ButtonTwoTone
+            class="play-button"
+            icon-class="play"
+            color="grey"
+            @click.native="playPlaylistByID()"
+          >
             {{ $t('common.play') }}
           </ButtonTwoTone>
           <ButtonTwoTone
@@ -75,147 +168,87 @@
           </ButtonTwoTone>
         </div>
       </div>
-      <div v-if="displaySearchInPlaylist" class="search-box">
-        <div class="container" :class="{ active: inputFocus }">
-          <svg-icon icon-class="search" />
-          <div class="input">
-            <input
-              v-model.trim="inputSearchKeyWords"
-              v-focus
-              :placeholder="inputFocus ? '' : $t('playlist.search')"
-              @input="inputDebounce()"
-              @focus="inputFocus = true"
-              @blur="inputFocus = false"
-            />
+
+      <div v-if="isLikeSongsPage" class="user-info">
+        <h1>
+          <img
+            class="avatar"
+            :src="(data.user && data.user.avatarUrl) | resizeImage"
+            loading="lazy"
+          />
+          {{ (data.user && data.user.nickname) || ''
+          }}{{ $t('library.sLikedSongs') }}
+        </h1>
+        <div class="search-box-likepage" @click="searchInPlaylist()">
+          <div class="container" :class="{ active: inputFocus }">
+            <svg-icon icon-class="search" />
+            <div class="input" :style="{ width: searchInputWidth }">
+              <input
+                v-if="displaySearchInPlaylist"
+                v-model.trim="inputSearchKeyWords"
+                v-focus
+                :placeholder="inputFocus ? '' : $t('playlist.search')"
+                @input="inputDebounce()"
+                @focus="inputFocus = true"
+                @blur="inputFocus = false"
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div v-if="specialPlaylistInfo !== undefined" class="special-playlist">
-      <div
-        class="title"
-        :class="specialPlaylistInfo.gradient"
-        @click.right="openMenu"
-      >
-        <!-- <img :src="playlist.coverImgUrl | resizeImage" /> -->
-        {{ specialPlaylistInfo.name }}
-      </div>
-      <div class="subtitle"
-        >{{ playlist.englishTitle }} · {{ playlist.updateFrequency }}
-      </div>
 
-      <div class="buttons">
+      <TrackList
+        :id="playlist.id"
+        :tracks="filteredTracks"
+        type="playlist"
+        :extra-context-menu-item="
+          isUserOwnPlaylist ? ['removeTrackFromPlaylist'] : []
+        "
+      />
+
+      <div class="load-more">
         <ButtonTwoTone
-          class="play-button"
-          icon-class="play"
+          v-show="hasMore"
           color="grey"
-          @click.native="playPlaylistByID()"
+          :loading="loadingMore"
+          @click.native="loadMore(100)"
+          >{{ $t('explore.loadMore') }}</ButtonTwoTone
         >
-          {{ $t('common.play') }}
-        </ButtonTwoTone>
-        <ButtonTwoTone
-          v-if="playlist.creator.userId !== data.user.userId"
-          :icon-class="playlist.subscribed ? 'heart-solid' : 'heart'"
-          :icon-button="true"
-          :horizontal-padding="0"
-          :color="playlist.subscribed ? 'blue' : 'grey'"
-          :text-color="playlist.subscribed ? '#335eea' : ''"
-          :background-color="
-            playlist.subscribed ? 'var(--color-secondary-bg)' : ''
-          "
-          @click.native="likePlaylist"
-        >
-        </ButtonTwoTone>
-        <ButtonTwoTone
-          icon-class="more"
-          :icon-button="true"
-          :horizontal-padding="0"
-          color="grey"
-          @click.native="openMenu"
-        >
-        </ButtonTwoTone>
       </div>
-    </div>
 
-    <div v-if="isLikeSongsPage" class="user-info">
-      <h1>
-        <img
-          class="avatar"
-          :src="(data.user && data.user.avatarUrl) | resizeImage"
-          loading="lazy"
-        />
-        {{ (data.user && data.user.nickname) || ''
-        }}{{ $t('library.sLikedSongs') }}
-      </h1>
-      <div class="search-box-likepage" @click="searchInPlaylist()">
-        <div class="container" :class="{ active: inputFocus }">
-          <svg-icon icon-class="search" />
-          <div class="input" :style="{ width: searchInputWidth }">
-            <input
-              v-if="displaySearchInPlaylist"
-              v-model.trim="inputSearchKeyWords"
-              v-focus
-              :placeholder="inputFocus ? '' : $t('playlist.search')"
-              @input="inputDebounce()"
-              @focus="inputFocus = true"
-              @blur="inputFocus = false"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <TrackList
-      :id="playlist.id"
-      :tracks="filteredTracks"
-      type="playlist"
-      :extra-context-menu-item="
-        isUserOwnPlaylist ? ['removeTrackFromPlaylist'] : []
-      "
-    />
-
-    <div class="load-more">
-      <ButtonTwoTone
-        v-show="hasMore"
-        color="grey"
-        :loading="loadingMore"
-        @click.native="loadMore(100)"
-        >{{ $t('explore.loadMore') }}</ButtonTwoTone
+      <Modal
+        :show="showFullDescription"
+        :close="toggleFullDescription"
+        :show-footer="false"
+        :click-outside-hide="true"
+        title="歌单介绍"
+        >{{ playlist.description }}</Modal
       >
+
+      <ContextMenu ref="playlistMenu">
+        <!-- <div class="item">{{ $t('contextMenu.addToQueue') }}</div> -->
+        <div class="item" @click="likePlaylist(true)">{{
+          playlist.subscribed
+            ? $t('contextMenu.removeFromLibrary')
+            : $t('contextMenu.saveToLibrary')
+        }}</div>
+        <div class="item" @click="searchInPlaylist()">{{
+          $t('contextMenu.searchInPlaylist')
+        }}</div>
+        <div
+          v-if="playlist.creator.userId === data.user.userId"
+          class="item"
+          @click="editPlaylist"
+          >编辑歌单信息</div
+        >
+        <div
+          v-if="playlist.creator.userId === data.user.userId"
+          class="item"
+          @click="deletePlaylist"
+          >删除歌单</div
+        >
+      </ContextMenu>
     </div>
-
-    <Modal
-      :show="showFullDescription"
-      :close="toggleFullDescription"
-      :show-footer="false"
-      :click-outside-hide="true"
-      title="歌单介绍"
-      >{{ playlist.description }}</Modal
-    >
-
-    <ContextMenu ref="playlistMenu">
-      <!-- <div class="item">{{ $t('contextMenu.addToQueue') }}</div> -->
-      <div class="item" @click="likePlaylist(true)">{{
-        playlist.subscribed
-          ? $t('contextMenu.removeFromLibrary')
-          : $t('contextMenu.saveToLibrary')
-      }}</div>
-      <div class="item" @click="searchInPlaylist()">{{
-        $t('contextMenu.searchInPlaylist')
-      }}</div>
-      <div
-        v-if="playlist.creator.userId === data.user.userId"
-        class="item"
-        @click="editPlaylist"
-        >编辑歌单信息</div
-      >
-      <div
-        v-if="playlist.creator.userId === data.user.userId"
-        class="item"
-        @click="deletePlaylist"
-        >删除歌单</div
-      >
-    </ContextMenu>
   </div>
 </template>
 
@@ -228,6 +261,7 @@ import {
   deletePlaylist,
 } from '@/api/playlist';
 import { getTrackDetail } from '@/api/track';
+import { getPlaylistFromCache } from '@/utils/db';
 import { isAccountLoggedIn } from '@/utils/auth';
 import nativeAlert from '@/utils/nativeAlert';
 import locale from '@/locale';
@@ -345,6 +379,18 @@ export default {
       },
     },
   },
+  // 歌单之间跳转命中同一个路由记录，组件会被复用、created 不再触发，
+  // 少了这道 hook 地址栏换了 id 页面却还停在上一个歌单。
+  beforeRouteUpdate(to, from, next) {
+    this.show = false;
+    this.hasMore = false;
+    this.loadingMore = false;
+    this.displaySearchInPlaylist = false;
+    this.searchKeyWords = '';
+    this.inputSearchKeyWords = '';
+    this.loadData(to.params.id);
+    next();
+  },
   data() {
     return {
       show: false,
@@ -367,6 +413,9 @@ export default {
       inputFocus: false,
       debounceTimeout: null,
       searchInputWidth: '0px', // 搜索框宽度
+      loadToken: 0, // 自增标记，用来丢弃已经切走的那次加载的回调
+      tracksVersion: 0, // tracks 每次被整体替换就 +1，用来作废在途的翻页请求
+      nprogressTimeout: null,
     };
   },
   computed: {
@@ -384,22 +433,16 @@ export default {
       );
     },
     filteredTracks() {
+      // 没在搜索时直接返回原数组，省掉上千首歌 × 3 次 toLowerCase 的无谓开销
+      if (this.searchKeyWords === '') return this.tracks;
+      const keywords = this.searchKeyWords.toLowerCase();
       return this.tracks.filter(
         track =>
-          (track.name &&
-            track.name
-              .toLowerCase()
-              .includes(this.searchKeyWords.toLowerCase())) ||
-          (track.al.name &&
-            track.al.name
-              .toLowerCase()
-              .includes(this.searchKeyWords.toLowerCase())) ||
+          (track.name && track.name.toLowerCase().includes(keywords)) ||
+          (track.al.name && track.al.name.toLowerCase().includes(keywords)) ||
           track.ar.find(
             artist =>
-              artist.name &&
-              artist.name
-                .toLowerCase()
-                .includes(this.searchKeyWords.toLowerCase())
+              artist.name && artist.name.toLowerCase().includes(keywords)
           )
       );
     },
@@ -410,9 +453,16 @@ export default {
     } else {
       this.loadData(this.$route.params.id);
     }
-    setTimeout(() => {
+    // 骨架屏已经先顶上了，进度条只留给真正慢的那几次
+    this.nprogressTimeout = setTimeout(() => {
       if (!this.show) NProgress.start();
-    }, 1000);
+    }, 500);
+  },
+  beforeDestroy() {
+    clearTimeout(this.nprogressTimeout);
+    clearTimeout(this.debounceTimeout);
+    // 加载途中切走时把进度条收掉，否则它会一直挂在顶部转
+    if (!this.show) NProgress.done();
   },
   methods: {
     ...mapMutations(['appendTrackToPlayerList']),
@@ -447,26 +497,49 @@ export default {
         });
       });
     },
-    loadData(id, next = undefined) {
+    loadData(id) {
       this.id = id;
-      getPlaylistDetail(this.id, true)
+      const token = ++this.loadToken;
+
+      // 缓存先行：读一次 IndexedDB 只要几毫秒，足够把骨架换成上次看到的内容；
+      // 网络回来后再整体校正（stale-while-revalidate）。
+      getPlaylistFromCache(id).then(cached => {
+        if (!cached || token !== this.loadToken || this.show) return;
+        this.playlist = cached;
+        this.tracks = cached.tracks || [];
+        this.tracksVersion++;
+        this.lastLoadedTrackIndex = this.tracks.length - 1;
+        this.show = true;
+        NProgress.done();
+      });
+
+      return getPlaylistDetail(this.id, true)
         .then(data => {
+          if (token !== this.loadToken) return;
           this.playlist = data.playlist;
-          this.tracks = data.playlist.tracks;
+          // 复制一份：这次响应可能被去重共享给别的调用方，
+          // loadMore 往里 push 会污染他们手上的 tracks。
+          this.tracks = data.playlist.tracks.slice();
+          this.tracksVersion++;
+          this.lastLoadedTrackIndex = this.tracks.length - 1;
           NProgress.done();
-          if (next !== undefined) next();
           this.show = true;
-          this.lastLoadedTrackIndex = data.playlist.tracks.length - 1;
-          return data;
-        })
-        .then(() => {
           if (this.playlist.trackCount > this.tracks.length) {
             this.loadingMore = true;
             this.loadMore();
           }
+        })
+        .catch(error => {
+          if (token !== this.loadToken) return;
+          NProgress.done();
+          // 已经用缓存铺出内容时静默失败；否则得让用户知道页面为什么是空的
+          if (!this.show) this.showToast(`${error.message || error}`);
         });
     },
     loadMore(loadNum = 100) {
+      // tracks 整体被换掉后（缓存内容被网络数据校正、或切了歌单），
+      // 这批补充就对不上号了，落地时直接丢弃，否则会 push 出重复曲目。
+      const version = this.tracksVersion;
       let trackIDs = this.playlist.trackIds.filter((t, index) => {
         if (
           index > this.lastLoadedTrackIndex &&
@@ -477,6 +550,10 @@ export default {
       });
       trackIDs = trackIDs.map(t => t.id);
       getTrackDetail(trackIDs.join(',')).then(data => {
+        if (version !== this.tracksVersion) {
+          this.loadingMore = false;
+          return;
+        }
         this.tracks.push(...data.songs);
         this.lastLoadedTrackIndex += trackIDs.length;
         this.loadingMore = false;
@@ -550,10 +627,116 @@ export default {
 .playlist {
   margin-top: 32px;
 }
+
+// 请求期间先铺一层与真实布局同形的占位，避免整页空白干等网络
+.playlist-skeleton {
+  animation: fade-in var(--duration-fast) var(--ease-out-quart) both;
+
+  .sk-line,
+  .sk-cover,
+  .sk-button,
+  .sk-track-cover {
+    background: var(--color-secondary-bg);
+    border-radius: 8px;
+    // 只动 opacity：占位层不该跟首屏抢合成资源
+    animation: soft-pulse 1.8s var(--ease-in-out-soft) infinite both;
+  }
+
+  .sk-header {
+    display: flex;
+    margin-bottom: 72px;
+  }
+  .sk-cover {
+    flex: none;
+    height: 288px;
+    width: 288px;
+    border-radius: 12px;
+  }
+  .sk-info {
+    flex: 1;
+    margin-left: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .sk-name {
+    height: 36px;
+    width: 46%;
+  }
+  .sk-artist {
+    height: 18px;
+    width: 30%;
+    margin-top: 24px;
+  }
+  .sk-meta {
+    height: 14px;
+    width: 38%;
+    margin-top: 8px;
+  }
+  .sk-desc {
+    height: 14px;
+    width: 64%;
+    margin-top: 24px;
+  }
+  .sk-desc.last {
+    width: 40%;
+    margin-top: 8px;
+  }
+  .sk-user-title {
+    height: 42px;
+    width: 320px;
+    margin-bottom: 48px;
+  }
+  .sk-buttons {
+    display: flex;
+    margin-top: 32px;
+  }
+  .sk-button {
+    height: 40px;
+    width: 92px;
+    margin-right: 16px;
+  }
+  .sk-button.round {
+    width: 40px;
+  }
+
+  .sk-track {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+
+    // 每行错开一点，占位像在依次醒来，而不是整块一起闪
+    .sk-line,
+    .sk-track-cover {
+      animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step));
+    }
+  }
+  .sk-track-cover {
+    flex: none;
+    height: 46px;
+    width: 46px;
+    margin-right: 20px;
+  }
+  .sk-track-text {
+    flex: 1;
+  }
+  .sk-track-name {
+    height: 18px;
+    width: 34%;
+  }
+  .sk-track-artist {
+    height: 13px;
+    width: 22%;
+    margin-top: 8px;
+  }
+}
+
 .playlist-info {
   display: flex;
   margin-bottom: 72px;
   position: relative;
+  // 数据到位后整块上浮淡入，接住骨架屏留下的位置
+  animation: hero-title-enter 0.5s var(--ease-out-expo) both;
   .info {
     display: flex;
     flex-direction: column;
@@ -617,6 +800,7 @@ export default {
   margin-bottom: 128px;
   border-radius: 1.25em;
   text-align: center;
+  animation: hero-title-enter 0.5s var(--ease-out-expo) both;
 
   @keyframes letterSpacing4 {
     from {
@@ -804,6 +988,7 @@ export default {
     font-size: 42px;
     position: relative;
     color: var(--color-text);
+    animation: hero-title-enter 0.5s var(--ease-out-expo) both;
     .avatar {
       height: 44px;
       margin-right: 12px;

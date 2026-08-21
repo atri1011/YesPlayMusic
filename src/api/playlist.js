@@ -1,5 +1,6 @@
 import request from '@/utils/request';
 import { mapTrackPlayableStatus } from '@/utils/common';
+import { cachePlaylist } from '@/utils/db';
 
 /**
  * 推荐歌单
@@ -32,6 +33,11 @@ export function dailyRecommendPlaylist(params) {
     },
   });
 }
+const playlistDetailInFlight = new Map();
+
+// 同一批封面反复划过不该变成反复请求，一个 id 一个会话内只预取一次
+const prefetchedPlaylists = new Set();
+
 /**
  * 获取歌单详情
  * 说明 : 歌单能看到歌单名字, 但看不到具体歌单内容 , 调用此接口 , 传入歌单 id, 可以获取对应歌单内的所有的音乐(未登录状态只能获取不完整的歌单,登录后是完整的)，
@@ -43,21 +49,44 @@ export function dailyRecommendPlaylist(params) {
  * @param {boolean=} noCache
  */
 export function getPlaylistDetail(id, noCache = false) {
+  // 同一个歌单的并发请求合并成一次：封面 hover 预取和紧接着的点击不该打两次网络，
+  // 点击时若预取还在飞，直接继承它已经跑掉的那段时间。
+  const key = `${id}-${noCache}`;
+  const pending = playlistDetailInFlight.get(key);
+  if (pending) return pending;
+
   let params = { id };
   if (noCache) params.timestamp = new Date().getTime();
-  return request({
+  const task = request({
     url: '/playlist/detail',
     method: 'get',
     params,
-  }).then(data => {
-    if (data.playlist) {
-      data.playlist.tracks = mapTrackPlayableStatus(
-        data.playlist.tracks,
-        data.privileges || []
-      );
-    }
-    return data;
-  });
+  })
+    .then(data => {
+      if (data.playlist) {
+        data.playlist.tracks = mapTrackPlayableStatus(
+          data.playlist.tracks,
+          data.privileges || []
+        );
+        cachePlaylist(id, data.playlist);
+      }
+      return data;
+    })
+    .finally(() => playlistDetailInFlight.delete(key));
+
+  playlistDetailInFlight.set(key, task);
+  return task;
+}
+
+/**
+ * 预取歌单详情，只为把结果塞进 in-flight / IndexedDB 缓存，调用方不关心返回值。
+ * 失败静默：预取本来就是锦上添花，真正打开歌单时还会再请求一次。
+ * @param {number} id
+ */
+export function prefetchPlaylistDetail(id) {
+  if (!id || prefetchedPlaylists.has(id)) return;
+  prefetchedPlaylists.add(id);
+  getPlaylistDetail(id, true).catch(() => prefetchedPlaylists.delete(id));
 }
 /**
  * 获取精品歌单
