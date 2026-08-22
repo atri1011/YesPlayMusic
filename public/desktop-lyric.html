@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="referrer" content="no-referrer" />
+  <title>
+    <%= htmlWebpackPlugin.options.title %>
+  </title>
+  <style>
+    /* 窗口是 transparent 的，body 必须真的没有底色，否则整块会是白的。
+       调试提示：DevTools 打开时 Electron 会强制取消窗口透明，那时看到的
+       黑底/白底不是样式问题。 */
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      user-select: none;
+      cursor: default;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+</body>
+
+</html>

@@ -50,4 +50,17 @@ export default [
     shortcut: 'CommandOrControl+G',
     globalShortcut: 'Alt+CommandOrControl+G',
   },
+  {
+    id: 'desktopLyric',
+    name: '桌面歌词',
+    shortcut: 'CommandOrControl+D',
+    globalShortcut: 'Alt+CommandOrControl+D',
+  },
+  {
+    id: 'desktopLyricLock',
+    // 锁定后整个窗口点击穿透，这是唯一能解锁的逃生口，必须是全局的
+    name: '锁定桌面歌词',
+    shortcut: 'CommandOrControl+K',
+    globalShortcut: 'Alt+CommandOrControl+K',
+  },
 ];

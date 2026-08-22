@@ -32,6 +32,8 @@ export function registerGlobalShortcut(win, store) {
   send('decreaseVolume', 'decreaseVolume');
   send('like', 'like');
   send('gameMode', 'toggleGameMode');
+  send('desktopLyric', 'toggleDesktopLyric');
+  send('desktopLyricLock', 'toggleDesktopLyricLock');
 
   globalShortcut.register(accelerator('minimize'), () => {
     win.isVisible() ? win.hide() : win.show();

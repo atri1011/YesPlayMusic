@@ -28,6 +28,8 @@ let localStorage = {
     showLyricsWordByWord: true,
     enableExternalYrcDB: true,
     lyricsBackground: true,
+    showDesktopLyric: false,
+    desktopLyricLocked: false,
     enableOsdlyricsSupport: false,
     closeAppOption: 'ask',
     enableDiscordRichPresence: false,

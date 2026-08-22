@@ -41,6 +41,16 @@ module.exports = {
       title: 'YesPlayMusic',
       chunks: ['main', 'chunk-vendors', 'chunk-common', 'index'],
     },
+    // 桌面歌词是独立窗口的独立入口，不能复用 index：那个入口一路 import 到
+    // store/index.js，模块顶层就 new Player()，第二个窗口会多出一个 Howler
+    // 实例，两边同时读写 localStorage 的 player 字段。
+    desktopLyric: {
+      entry: 'src/desktopLyric/main.js',
+      template: 'public/desktop-lyric.html',
+      filename: 'desktop-lyric.html',
+      title: 'YesPlayMusic Desktop Lyric',
+      chunks: ['chunk-vendors', 'chunk-common', 'desktopLyric'],
+    },
   },
   chainWebpack(config) {
     config.module.rules.delete('svg');
@@ -74,9 +84,12 @@ module.exports = {
       .end();
 
     // LimitChunkCountPlugin 可以通过合并块来对块进行后期处理。用以解决 chunk 包太多的问题
+    // 上限跟着入口数走：单入口时是 index + chunk-vendors + chunk-common 三块，
+    // 加了 desktopLyric 入口就是四块。留不够会强制把 vendors/common 合并掉，
+    // 而 pages 里的 chunks 白名单是按名字写的，合并后可能注入不到。
     config.plugin('chunkPlugin').use(webpack.optimize.LimitChunkCountPlugin, [
       {
-        maxChunks: 3,
+        maxChunks: 4,
         minChunkSize: 10_000,
       },
     ]);

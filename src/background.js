@@ -25,6 +25,7 @@ import { createMenu } from './electron/menu';
 import { createTray } from '@/electron/tray';
 import { createTouchBar } from './electron/touchBar';
 import { createDockMenu } from './electron/dockMenu';
+import { destroyDesktopLyricWindow } from '@/electron/desktopLyricWindow';
 import { registerGlobalShortcut } from './electron/globalShortcut';
 import { autoUpdater } from 'electron-updater';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
@@ -501,6 +502,9 @@ class Background {
 
     app.on('before-quit', () => {
       this.willQuitApp = true;
+      // 桌面歌词窗口一活着，'window-all-closed' 就永远不触发，应用退不掉。
+      // 所有走 app.quit() 的退出路径都会先经过这里
+      destroyDesktopLyricWindow();
     });
 
     app.on('quit', () => {

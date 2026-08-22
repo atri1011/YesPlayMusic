@@ -4,6 +4,14 @@ import cloneDeep from 'lodash/cloneDeep';
 import shortcuts from '@/utils/shortcuts';
 import { createMenu } from './menu';
 import { isCreateTray, isMac } from '@/utils/platform';
+import {
+  createDesktopLyricWindow,
+  destroyDesktopLyricWindow,
+  sendToDesktopLyric,
+  setDesktopLyricBounds,
+  setDesktopLyricHover,
+  setDesktopLyricLocked,
+} from '@/electron/desktopLyricWindow';
 
 const clc = require('cli-color');
 const log = text => {
@@ -375,12 +383,50 @@ export function initIpcMain(win, store, trayEventEmitter) {
 
   ipcMain.on('settings', (event, options) => {
     store.set('settings', options);
+    // 桌面歌词窗口没有 Vuex，设置变更白嫖这条已有的链路转发过去
+    sendToDesktopLyric('desktopLyric:settings', options);
     if (options.enableGlobalShortcut) {
       registerGlobalShortcut(win, store);
     } else {
       log('unregister global shortcut');
       globalShortcut.unregisterAll();
     }
+  });
+
+  // —— 桌面歌词 ——
+  // 真值在渲染进程的 settings 里，这里只负责按它开关窗口、转发状态。
+  // 歌词窗口上的按钮也一律绕回主窗口去改 settings，不在主进程私自改状态，
+  // 免得两边各存一份互相打架。
+  ipcMain.on('desktopLyric:toggle', (_, on) => {
+    if (on === true) createDesktopLyricWindow(win, store);
+    else destroyDesktopLyricWindow();
+  });
+
+  ipcMain.on('desktopLyric:update', (_, payload) => {
+    sendToDesktopLyric('desktopLyric:update', payload);
+  });
+
+  ipcMain.on('desktopLyric:lock', (_, locked) => {
+    setDesktopLyricLocked(locked);
+  });
+
+  ipcMain.on('desktopLyric:hover', (_, hovering) => {
+    setDesktopLyricHover(hovering);
+  });
+
+  ipcMain.on('desktopLyric:setBounds', (_, patch) => {
+    setDesktopLyricBounds(store, patch);
+  });
+
+  ipcMain.on('desktopLyric:control', (_, action) => {
+    const channel = {
+      play: 'play',
+      next: 'next',
+      previous: 'previous',
+      lock: 'toggleDesktopLyricLock',
+      close: 'closeDesktopLyric',
+    }[action];
+    if (channel) win.webContents.send(channel);
   });
 
   ipcMain.on('playDiscordPresence', (event, track) => {

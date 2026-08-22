@@ -1,5 +1,10 @@
 import store from '@/store';
 import { toggleGameMode } from '@/utils/gameMode';
+import {
+  setDesktopLyric,
+  toggleDesktopLyric,
+  toggleDesktopLyricLock,
+} from '@/utils/desktopLyric';
 
 const player = store.state.player;
 
@@ -86,6 +91,19 @@ export function ipcRenderer(vueInstance) {
 
   ipcRenderer.on('toggleGameMode', () => {
     toggleGameMode();
+  });
+
+  // 桌面歌词窗口自己没有 settings，它上面的按钮和全局快捷键都绕回这里改真值
+  ipcRenderer.on('toggleDesktopLyric', () => {
+    toggleDesktopLyric();
+  });
+
+  ipcRenderer.on('toggleDesktopLyricLock', () => {
+    toggleDesktopLyricLock();
+  });
+
+  ipcRenderer.on('closeDesktopLyric', () => {
+    setDesktopLyric(false);
   });
 
   ipcRenderer.on('rememberCloseAppOption', (event, value) => {

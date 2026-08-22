@@ -43,6 +43,8 @@ import GameMode from './components/GameMode.vue';
 import Toast from './components/Toast.vue';
 import { ipcRenderer } from './electron/ipcRenderer';
 import { isAccountLoggedIn, isLooseLoggedIn } from '@/utils/auth';
+import { initLyricProvider } from '@/utils/lyricProvider';
+import { initDesktopLyricBridge } from '@/utils/desktopLyric';
 import Lyrics from './views/lyrics.vue';
 import { mapState } from 'vuex';
 
@@ -103,6 +105,10 @@ export default {
   },
   created() {
     if (this.isElectron) ipcRenderer(this);
+    // 歌词不再挂在歌词页上：游戏模式下整棵界面树都被 GameMode 换掉，
+    // 而桌面歌词那时还得工作
+    initLyricProvider();
+    initDesktopLyricBridge();
     window.addEventListener('keydown', this.handleKeydown);
     this.fetchData();
   },
