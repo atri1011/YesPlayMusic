@@ -44,4 +44,10 @@ export default [
     shortcut: 'CommandOrControl+M',
     globalShortcut: 'Alt+CommandOrControl+M',
   },
+  {
+    id: 'gameMode',
+    name: '游戏模式',
+    shortcut: 'CommandOrControl+G',
+    globalShortcut: 'Alt+CommandOrControl+G',
+  },
 ];

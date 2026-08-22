@@ -22,6 +22,7 @@ let localStorage = {
     cacheLimit: 8192,
     cachePath: null,
     enableReversedMode: false,
+    gameMode: false,
     nyancatStyle: false,
     showLyricsTranslation: true,
     showLyricsWordByWord: true,

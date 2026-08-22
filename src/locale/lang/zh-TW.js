@@ -239,6 +239,13 @@ export default {
     showLibraryDefault: '啟動後顯示音樂庫',
     subTitleDefault: '副標題使用別名',
     enableReversedMode: '啟用倒序播放功能 (實驗性功能)',
+    gameMode: {
+      text: '遊戲模式',
+      description:
+        '打遊戲時把介面精簡成一個播放核心，關掉封面預取、中繼資料快取與介面繪製，把頻寬、CPU 和磁碟讓給遊戲。快捷鍵 Alt+Ctrl+G',
+    },
+    gameModeExit: '退出遊戲模式',
+    gameModeHint: '按 Alt+Ctrl+G 或點擊工作列圖示選單也可以退出',
     enableCustomTitlebar: '啟用自訂標題列（重新啟動後生效）',
     showLyricsTime: '顯示目前時間',
     lyricsBackground: {

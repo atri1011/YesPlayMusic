@@ -1,4 +1,5 @@
 import store from '@/store';
+import { toggleGameMode } from '@/utils/gameMode';
 
 const player = store.state.player;
 
@@ -26,6 +27,8 @@ export function ipcRenderer(vueInstance) {
   });
 
   ipcRenderer.on('search', () => {
+    // 游戏模式下 Navbar 没有挂载，这些 ref 都不存在
+    if (!self.$refs.navbar) return;
     // 触发数据响应
     self.$refs.navbar.$refs.searchInput.focus();
     self.$refs.navbar.inputFocus = true;
@@ -74,11 +77,15 @@ export function ipcRenderer(vueInstance) {
   });
 
   ipcRenderer.on('routerGo', (event, where) => {
-    self.$refs.navbar.go(where);
+    self.$refs.navbar?.go(where);
   });
 
   ipcRenderer.on('nextUp', () => {
-    self.$refs.player.goToNextTracksPage();
+    self.$refs.player?.goToNextTracksPage();
+  });
+
+  ipcRenderer.on('toggleGameMode', () => {
+    toggleGameMode();
   });
 
   ipcRenderer.on('rememberCloseAppOption', (event, value) => {

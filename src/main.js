@@ -8,6 +8,7 @@ import '@/assets/icons';
 import '@/utils/filters';
 import './registerServiceWorker';
 import { dailyTask } from '@/utils/common';
+import { isGameMode } from '@/utils/gameMode';
 import '@/assets/css/global.scss';
 import '@/assets/css/transitions.scss';
 import NProgress from 'nprogress';
@@ -33,6 +34,9 @@ Vue.use(
   VueGtag,
   {
     config: { id: 'G-KMJJCFZDKF' },
+    // 游戏模式下连 GA 脚本都不去下载，一点带宽也不占游戏的
+    enabled: !isGameMode(),
+    bootstrap: !isGameMode(),
   },
   router
 );

@@ -687,6 +687,26 @@
 
       <div class="item">
         <div class="left">
+          <div class="title">{{ $t('settings.gameMode.text') }}</div>
+          <div class="description">{{
+            $t('settings.gameMode.description')
+          }}</div>
+        </div>
+        <div class="right">
+          <div class="toggle">
+            <input
+              id="game-mode"
+              v-model="gameMode"
+              type="checkbox"
+              name="game-mode"
+            />
+            <label for="game-mode"></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="left">
           <div class="title" style="transform: scaleX(-1)">🐈️ 🏳️‍🌈</div>
         </div>
         <div class="right">
@@ -1252,6 +1272,17 @@ export default {
         if (value === false) {
           this.$store.state.player.reversed = false;
         }
+      },
+    },
+    gameMode: {
+      get() {
+        return this.settings.gameMode === true;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', {
+          key: 'gameMode',
+          value,
+        });
       },
     },
     enableGlobalShortcut: {

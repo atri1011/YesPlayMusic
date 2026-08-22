@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Dexie from 'dexie';
 import store from '@/store';
+import { isGameMode } from '@/utils/gameMode';
 // import pkg from "../../package.json";
 
 const db = new Dexie('yesplaymusic');
@@ -280,9 +281,13 @@ export async function cacheTrackSource(
   if (cover.slice(0, 5) !== 'https') {
     cover = 'https' + cover.slice(4);
   }
-  axios.get(`${cover}?param=512y512`);
-  axios.get(`${cover}?param=224y224`);
-  axios.get(`${cover}?param=1024y1024`);
+  // 这三发请求的结果直接丢弃，只为把各尺寸封面暖进 HTTP 缓存。
+  // 游戏模式下界面根本不显示这些尺寸，每首歌白烧几百 KB 带宽，跳过。
+  if (!isGameMode()) {
+    axios.get(`${cover}?param=512y512`);
+    axios.get(`${cover}?param=224y224`);
+    axios.get(`${cover}?param=1024y1024`);
+  }
   const response = await axios.get(url, {
     responseType: 'arraybuffer',
   });
@@ -376,7 +381,11 @@ export async function getTrackSource(id) {
   return track;
 }
 
+// 游戏模式下这些元数据表一律不写：它们服务的是「下次打开界面时快一点」，
+// 而游戏模式压根没有界面，写进去只是白占磁盘 I/O。读取路径不受影响，
+// 已有缓存照常命中。
 export function cacheTrackDetail(track, privileges) {
+  if (isGameMode()) return;
   db.trackDetail.put({
     id: track.id,
     detail: track,
@@ -406,6 +415,7 @@ export function getTrackDetailFromCache(ids) {
 }
 
 export function cacheLyric(id, lyrics) {
+  if (isGameMode()) return;
   db.lyric.put({
     id,
     lyrics,
@@ -421,6 +431,7 @@ export function getLyricFromCache(id) {
 }
 
 export function cacheLyricNew(id, lyrics) {
+  if (isGameMode()) return;
   db.lyricNew.put({
     id: Number(id),
     lyrics,
@@ -448,6 +459,7 @@ const EXTERNAL_YRC_CACHE_VERSION = 2;
  * @param {string|null} yrc 原始 yrc 文本，null 表示该库确认没有这首歌
  */
 export function cacheExternalYrc(id, yrc) {
+  if (isGameMode()) return;
   db.externalYrc.put({
     id: Number(id),
     yrc,
@@ -471,6 +483,7 @@ export function getExternalYrcFromCache(id) {
 }
 
 export function cacheAlbum(id, album) {
+  if (isGameMode()) return;
   db.album.put({
     id: Number(id),
     album,
@@ -493,6 +506,7 @@ const PLAYLIST_CACHE_MAX_TRACKS = 100;
 const PLAYLIST_CACHE_MAX_ENTRIES = 50;
 
 export function cachePlaylist(id, playlist) {
+  if (isGameMode()) return;
   if (!id || !playlist) return;
   db.playlist
     .put({

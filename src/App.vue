@@ -1,28 +1,33 @@
 <template>
   <div id="app" :class="{ 'user-select-none': userSelectNone }">
-    <Scrollbar v-show="!showLyrics" ref="scrollbar" />
-    <Navbar v-show="showNavbar" ref="navbar" />
-    <main
-      ref="main"
-      :style="{ overflow: enableScrolling ? 'auto' : 'hidden' }"
-      @scroll="handleScroll"
-    >
-      <keep-alive>
-        <router-view v-if="$route.meta.keepAlive"></router-view>
-      </keep-alive>
-      <router-view v-if="!$route.meta.keepAlive"></router-view>
-    </main>
-    <transition name="slide-up">
-      <Player v-if="enablePlayer" v-show="showPlayer" ref="player" />
-    </transition>
+    <!-- 游戏模式：只留一个能放歌的内核，其余界面一律不渲染（不是 v-show，是真的不挂载），
+         keep-alive 缓存页、backdrop-filter 合成层、歌词页取色都随之消失。 -->
+    <GameMode v-if="gameMode" />
+    <template v-else>
+      <Scrollbar v-show="!showLyrics" ref="scrollbar" />
+      <Navbar v-show="showNavbar" ref="navbar" />
+      <main
+        ref="main"
+        :style="{ overflow: enableScrolling ? 'auto' : 'hidden' }"
+        @scroll="handleScroll"
+      >
+        <keep-alive>
+          <router-view v-if="$route.meta.keepAlive"></router-view>
+        </keep-alive>
+        <router-view v-if="!$route.meta.keepAlive"></router-view>
+      </main>
+      <transition name="slide-up">
+        <Player v-if="enablePlayer" v-show="showPlayer" ref="player" />
+      </transition>
+      <ModalAddTrackToPlaylist v-if="isAccountLoggedIn" />
+      <ModalNewPlaylist v-if="isAccountLoggedIn" />
+      <ModalImportExternalPlaylist v-if="isAccountLoggedIn" />
+      <ModalTrackComments v-if="enablePlayer" />
+      <transition v-if="enablePlayer" name="slide-up">
+        <Lyrics v-show="showLyrics" />
+      </transition>
+    </template>
     <Toast />
-    <ModalAddTrackToPlaylist v-if="isAccountLoggedIn" />
-    <ModalNewPlaylist v-if="isAccountLoggedIn" />
-    <ModalImportExternalPlaylist v-if="isAccountLoggedIn" />
-    <ModalTrackComments v-if="enablePlayer" />
-    <transition v-if="enablePlayer" name="slide-up">
-      <Lyrics v-show="showLyrics" />
-    </transition>
   </div>
 </template>
 
@@ -34,6 +39,7 @@ import ModalTrackComments from './components/ModalTrackComments.vue';
 import Scrollbar from './components/Scrollbar.vue';
 import Navbar from './components/Navbar.vue';
 import Player from './components/Player.vue';
+import GameMode from './components/GameMode.vue';
 import Toast from './components/Toast.vue';
 import { ipcRenderer } from './electron/ipcRenderer';
 import { isAccountLoggedIn, isLooseLoggedIn } from '@/utils/auth';
@@ -45,6 +51,7 @@ export default {
   components: {
     Navbar,
     Player,
+    GameMode,
     Toast,
     ModalAddTrackToPlaylist,
     ModalNewPlaylist,
@@ -61,6 +68,9 @@ export default {
   },
   computed: {
     ...mapState(['showLyrics', 'settings', 'player', 'enableScrolling']),
+    gameMode() {
+      return this.settings.gameMode === true;
+    },
     isAccountLoggedIn() {
       return isAccountLoggedIn();
     },
@@ -82,6 +92,15 @@ export default {
       return this.$route.name !== 'lastfmCallback';
     },
   },
+  watch: {
+    gameMode(on) {
+      // 歌词页在游戏模式下不渲染，但 showLyrics 还留在 store 里，
+      // 不清掉的话退出游戏模式会直接弹回歌词页
+      if (on && this.showLyrics) this.$store.commit('toggleLyrics');
+      // 退出时把进游戏模式期间跳过的音乐库数据补回来
+      if (!on) this.fetchData();
+    },
+  },
   created() {
     if (this.isElectron) ipcRenderer(this);
     window.addEventListener('keydown', this.handleKeydown);
@@ -98,7 +117,10 @@ export default {
     },
     fetchData() {
       if (!isLooseLoggedIn()) return;
+      // 喜欢的歌曲 ID 列表决定了播放界面上那颗心的状态，游戏模式下也要，所以留着；
+      // 其余几个只喂音乐库页面，界面都拆了，没必要占游戏的带宽。
       this.$store.dispatch('fetchLikedSongs');
+      if (this.gameMode) return;
       this.$store.dispatch('fetchLikedSongsWithDetails');
       this.$store.dispatch('fetchLikedPlaylist');
       if (isAccountLoggedIn()) {
@@ -109,7 +131,9 @@ export default {
       }
     },
     handleScroll() {
-      this.$refs.scrollbar.handleScroll();
+      // 游戏模式下 Scrollbar 没有挂载，而 <main> 上的 scroll 监听在切换的
+      // 那一帧还可能触发一次
+      this.$refs.scrollbar?.handleScroll();
     },
   },
 };

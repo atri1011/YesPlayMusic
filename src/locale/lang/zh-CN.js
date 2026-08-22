@@ -242,6 +242,13 @@ export default {
     showLibraryDefault: '启动后显示音乐库',
     subTitleDefault: '副标题使用别名',
     enableReversedMode: '启用倒序播放功能 (实验性功能)',
+    gameMode: {
+      text: '游戏模式',
+      description:
+        '打游戏时把界面精简成一个播放内核，关掉封面预取、元数据缓存与界面渲染，把带宽、CPU 和磁盘让给游戏。快捷键 Alt+Ctrl+G',
+    },
+    gameModeExit: '退出游戏模式',
+    gameModeHint: '按 Alt+Ctrl+G 或点击托盘菜单也可以退出',
     enableCustomTitlebar: '启用自定义标题栏 (重启后生效)',
     lyricsBackground: {
       text: '显示歌词背景',

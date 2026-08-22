@@ -95,8 +95,24 @@ class Background {
     this.neteaseMusicAPI = null;
     this.expressApp = null;
     this.willQuitApp = !isMac;
+    this.saveWindowBoundsTimer = null;
 
     this.init();
+  }
+
+  /**
+   * 'resized' / 'moved' 在拖动过程中会连着触发，每次都写一遍配置文件的话
+   * 拖个窗口就是一串同步写盘。收尾防抖，停手 500ms 后只写一次。
+   */
+  saveWindowBounds() {
+    if (this.saveWindowBoundsTimer !== null) {
+      clearTimeout(this.saveWindowBoundsTimer);
+    }
+    this.saveWindowBoundsTimer = setTimeout(() => {
+      this.saveWindowBoundsTimer = null;
+      if (!this.window || this.window.isDestroyed()) return;
+      this.store.set('window', this.window.getBounds());
+    }, 500);
   }
 
   init() {
@@ -347,11 +363,11 @@ class Background {
     });
 
     this.window.on('resized', () => {
-      this.store.set('window', this.window.getBounds());
+      this.saveWindowBounds();
     });
 
     this.window.on('moved', () => {
-      this.store.set('window', this.window.getBounds());
+      this.saveWindowBounds();
     });
 
     this.window.on('maximize', () => {

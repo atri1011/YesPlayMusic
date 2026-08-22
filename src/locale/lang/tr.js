@@ -238,6 +238,13 @@ export default {
     showLibraryDefault: 'Kitaplık Varsayılanını göster',
     subTitleDefault: 'Show Alias for Subtitle by default',
     enableReversedMode: 'Enable Reversed Mode (Experimental)',
+    gameMode: {
+      text: 'Oyun Modu',
+      description:
+        'Oyun oynarken uygulamayı yalın bir çalma çekirdeğine indirger: kapak ön yüklemesi, meta veri önbelleği ve arayüz çizimi kapatılır; bant genişliği, CPU ve disk oyuna kalır. Kısayol: Alt+Ctrl+G',
+    },
+    gameModeExit: 'Oyun Modundan Çık',
+    gameModeHint: 'Alt+Ctrl+G veya tepsi menüsü de çıkış yapar',
     enableCustomTitlebar: 'Enable custom title bar (Need restart)',
     lyricsBackground: {
       text: 'Şarkı Sözleri Arka Planını Göster',

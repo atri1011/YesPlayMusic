@@ -80,6 +80,14 @@ function createMenuTemplate(win) {
       visible: false,
     },
     {
+      label: '游戏模式',
+      // 显示的是全局快捷键：游戏在前台时窗口没焦点，只有全局的那个按得动
+      accelerator: 'Alt+CmdOrCtrl+G',
+      click: () => {
+        win.webContents.send('toggleGameMode');
+      },
+    },
+    {
       label: '退出',
       icon: nativeImage.createFromPath(
         path.join(__static, 'img/icons/exit.png')

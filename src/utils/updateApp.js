@@ -8,19 +8,21 @@ const updateSetting = () => {
     ...parsedSettings,
   };
 
+  // 修复历史升级逻辑写入的 null/undefined 项：旧版把 undefined push 进
+  // shortcuts 数组，JSON.stringify 后变成 null，渲染时 v-for 访问 .id 崩溃
+  settings.shortcuts = (settings.shortcuts || []).filter(
+    s => s && typeof s === 'object' && 'id' in s
+  );
+
   if (
     settings.shortcuts.length !== initLocalStorage.settings.shortcuts.length
   ) {
-    // 当新增 shortcuts 时
+    // 当新增 shortcuts 时，把默认配置中用户缺失的快捷键补回去
     const oldShortcutsId = settings.shortcuts.map(s => s.id);
-    const newShortcutsId = initLocalStorage.settings.shortcuts.filter(
+    const newShortcuts = initLocalStorage.settings.shortcuts.filter(
       s => oldShortcutsId.includes(s.id) === false
     );
-    newShortcutsId.map(id => {
-      settings.shortcuts.push(
-        initLocalStorage.settings.shortcuts.find(s => s.id === id)
-      );
-    });
+    settings.shortcuts.push(...newShortcuts);
   }
 
   if (localStorage.getItem('appVersion') === '"0.3.9"') {

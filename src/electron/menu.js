@@ -129,6 +129,16 @@ export function createMenu(win, store) {
             win.webContents.send('shuffle');
           },
         },
+        {
+          label: 'Game Mode',
+          // 用户配置里可能还没有新版本才加进来的这条，回退到默认值
+          accelerator:
+            shortcuts.find(s => s.id === 'gameMode')?.shortcut ??
+            defaultShortcuts.find(s => s.id === 'gameMode').shortcut,
+          click: () => {
+            win.webContents.send('toggleGameMode');
+          },
+        },
       ],
     },
     {

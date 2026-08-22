@@ -7,6 +7,7 @@ import { getLyric, getMP3, getTrackDetail, scrobble } from '@/api/track';
 import store from '@/store';
 import { isAccountLoggedIn } from '@/utils/auth';
 import { cacheTrackSource, getTrackSource } from '@/utils/db';
+import { isGameMode } from '@/utils/gameMode';
 import { isCreateMpris, isCreateTray } from '@/utils/platform';
 import { Howl, Howler } from 'howler';
 import shuffle from 'lodash/shuffle';
@@ -39,6 +40,17 @@ const excludeSaveKeys = [
   '_personalFMLoading',
   '_personalFMNextLoading',
 ];
+
+// 恢复播放进度用的 localStorage 写入间隔。游戏模式下把磁盘 I/O 让给游戏，
+// 代价只是异常退出时最多丢 10 秒进度。
+const PROGRESS_PERSIST_INTERVAL = 1000;
+const PROGRESS_PERSIST_INTERVAL_GAME_MODE = 10000;
+
+// 这两个状态刻意放在类外：Player 实例被 Proxy 包着，任何 this.xxx = 赋值都会
+// 触发一次全量 saveSelfToLocalStorage + sendSelfToIpcMain，放进实例反而会
+// 制造出比省下来的还多的写入。
+let lastProgressPersistedAt = 0;
+let cacheNextTrackPending = false;
 
 function setTitle(track) {
   document.title = track
@@ -251,11 +263,21 @@ export default class {
     setInterval(() => {
       if (this._howler === null) return;
       this._progress = this._howler.seek();
-      localStorage.setItem('playerCurrentTrackTime', this._progress);
+      this._persistProgress();
+      this._cacheNextTrackIfHalfway();
       if (isCreateMpris) {
         ipcRenderer?.send('playerCurrentTrackTime', this._progress);
       }
     }, 1000);
+  }
+  _persistProgress() {
+    const interval = isGameMode()
+      ? PROGRESS_PERSIST_INTERVAL_GAME_MODE
+      : PROGRESS_PERSIST_INTERVAL;
+    const now = Date.now();
+    if (now - lastProgressPersistedAt < interval) return;
+    lastProgressPersistedAt = now;
+    localStorage.setItem('playerCurrentTrackTime', this._progress);
   }
   _getNextTrack() {
     const next = this._reversed ? this.current - 1 : this.current + 1;
@@ -617,6 +639,9 @@ export default class {
     return getTrackDetail(id).then(data => {
       const track = data.songs[0];
       this._currentTrack = track;
+      // playerCurrentTrackTime 是「下次启动时当前这首歌 seek 到哪」，换了歌就得
+      // 立刻改写，否则节流窗口里崩掉会拿上一首的进度去 seek 新歌
+      lastProgressPersistedAt = 0;
       this._updateMediaSessionMetaData(track);
       return this._replaceCurrentTrackAudio(
         track,
@@ -656,7 +681,7 @@ export default class {
           replaced = true;
         }
         if (isCacheNextTrack) {
-          this._cacheNextTrack();
+          this._scheduleCacheNextTrack();
         }
         return replaced;
       } else {
@@ -689,6 +714,24 @@ export default class {
       let track = data.songs[0];
       this._getAudioSource(track);
     });
+  }
+  /**
+   * 常规模式下切歌就立刻预下载下一首。游戏模式下推迟到当前这首播过半再打，
+   * 免得预下载和切歌本身的请求撞在一起、在游戏里表现为一次带宽尖峰。
+   */
+  _scheduleCacheNextTrack() {
+    if (!isGameMode()) {
+      this._cacheNextTrack();
+      return;
+    }
+    cacheNextTrackPending = true;
+  }
+  _cacheNextTrackIfHalfway() {
+    if (!cacheNextTrackPending) return;
+    const duration = this.currentTrackDuration;
+    if (!duration || this._progress < duration / 2) return;
+    cacheNextTrackPending = false;
+    this._cacheNextTrack();
   }
   _loadSelfFromLocalStorage() {
     const player = JSON.parse(localStorage.getItem('player'));
@@ -811,7 +854,7 @@ export default class {
           this._personalFMNextTrack = undefined;
         } else {
           this._personalFMNextTrack = result.data[0];
-          this._cacheNextTrack(); // cache next track
+          this._scheduleCacheNextTrack(); // cache next track
         }
         this._personalFMNextLoading = false;
         return [true, this._personalFMNextTrack];

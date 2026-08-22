@@ -242,6 +242,13 @@ export default {
     showLibraryDefault: 'Show Library after App Launched',
     subTitleDefault: 'Show Alias for Subtitle by default',
     enableReversedMode: 'Enable Reversed Mode (Experimental)',
+    gameMode: {
+      text: 'Game Mode',
+      description:
+        'Strip the app down to a bare playback core while gaming: no cover prefetching, no metadata caching, no UI rendering — bandwidth, CPU and disk go to the game. Shortcut: Alt+Ctrl+G',
+    },
+    gameModeExit: 'Exit Game Mode',
+    gameModeHint: 'Alt+Ctrl+G or the tray menu also exits',
     enableCustomTitlebar: 'Enable custom title bar (Need restart)',
     showLyricsTime: 'Display current time',
     lyricsBackground: {

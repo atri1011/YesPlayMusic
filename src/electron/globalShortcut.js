@@ -13,46 +13,27 @@ export function registerGlobalShortcut(win, store) {
     shortcuts = defaultShortcuts;
   }
 
-  globalShortcut.register(
-    shortcuts.find(s => s.id === 'play').globalShortcut,
-    () => {
-      win.webContents.send('play');
-    }
-  );
-  globalShortcut.register(
-    shortcuts.find(s => s.id === 'next').globalShortcut,
-    () => {
-      win.webContents.send('next');
-    }
-  );
-  globalShortcut.register(
-    shortcuts.find(s => s.id === 'previous').globalShortcut,
-    () => {
-      win.webContents.send('previous');
-    }
-  );
-  globalShortcut.register(
-    shortcuts.find(s => s.id === 'increaseVolume').globalShortcut,
-    () => {
-      win.webContents.send('increaseVolume');
-    }
-  );
-  globalShortcut.register(
-    shortcuts.find(s => s.id === 'decreaseVolume').globalShortcut,
-    () => {
-      win.webContents.send('decreaseVolume');
-    }
-  );
-  globalShortcut.register(
-    shortcuts.find(s => s.id === 'like').globalShortcut,
-    () => {
-      win.webContents.send('like');
-    }
-  );
-  globalShortcut.register(
-    shortcuts.find(s => s.id === 'minimize').globalShortcut,
-    () => {
-      win.isVisible() ? win.hide() : win.show();
-    }
-  );
+  // 用户配置里可能没有新版本才加进来的快捷键（渲染进程的 updateApp 补完后才会同步过来），
+  // 直接 .find(...).globalShortcut 会在这一小段窗口期里炸掉，回退到默认值。
+  const accelerator = id =>
+    shortcuts.find(s => s.id === id)?.globalShortcut ??
+    defaultShortcuts.find(s => s.id === id).globalShortcut;
+
+  const send = (id, channel) => {
+    globalShortcut.register(accelerator(id), () => {
+      win.webContents.send(channel);
+    });
+  };
+
+  send('play', 'play');
+  send('next', 'next');
+  send('previous', 'previous');
+  send('increaseVolume', 'increaseVolume');
+  send('decreaseVolume', 'decreaseVolume');
+  send('like', 'like');
+  send('gameMode', 'toggleGameMode');
+
+  globalShortcut.register(accelerator('minimize'), () => {
+    win.isVisible() ? win.hide() : win.show();
+  });
 }
