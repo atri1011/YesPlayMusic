@@ -30,6 +30,10 @@ let localStorage = {
     lyricsBackground: true,
     showDesktopLyric: false,
     desktopLyricLocked: false,
+    // 桌面歌词的译文与字号跟歌词页各管各的：一个是浮在别人界面上的一两行，
+    // 一个是占满整屏的滚动列表，合用一份设置必然有一边不合适
+    desktopLyricTranslation: true,
+    desktopLyricFontSize: 30,
     enableOsdlyricsSupport: false,
     closeAppOption: 'ask',
     enableDiscordRichPresence: false,

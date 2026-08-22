@@ -18,6 +18,14 @@ const ipcRenderer =
     ? window.require('electron').ipcRenderer
     : null;
 
+/**
+ * 可选字号。设置页的下拉框和窗口工具条的 A-/A+ 共用这一份：
+ * A-/A+ 走的是这个数组的下标，两边永远选得到同一批值，不会出现
+ * 工具条调出一个下拉框里没有的字号。
+ */
+export const DESKTOP_LYRIC_FONT_SIZES = [18, 22, 26, 30, 36, 42, 50, 60];
+const DEFAULT_FONT_SIZE = 30;
+
 export function isDesktopLyricOn() {
   return store.state.settings?.showDesktopLyric === true;
 }
@@ -37,6 +45,26 @@ export function toggleDesktopLyricLock() {
   store.commit('updateSettings', {
     key: 'desktopLyricLocked',
     value: store.state.settings?.desktopLyricLocked !== true,
+  });
+}
+
+export function getDesktopLyricFontSize() {
+  const size = store.state.settings?.desktopLyricFontSize;
+  // 老版本 localStorage 里没有这个键，手改过的值也可能不在列表里
+  return DESKTOP_LYRIC_FONT_SIZES.includes(size) ? size : DEFAULT_FONT_SIZE;
+}
+
+/**
+ * 按档位挪字号。窗口上的 A-/A+ 绕回主窗口改 settings，跟其他按钮一样
+ * 不在窗口那侧私存状态。
+ * @param {number} delta +1 放大一档，-1 缩小一档
+ */
+export function stepDesktopLyricFontSize(delta) {
+  const sizes = DESKTOP_LYRIC_FONT_SIZES;
+  const index = sizes.indexOf(getDesktopLyricFontSize()) + delta;
+  store.commit('updateSettings', {
+    key: 'desktopLyricFontSize',
+    value: sizes[Math.min(Math.max(index, 0), sizes.length - 1)],
   });
 }
 

@@ -46,7 +46,9 @@ Add project-specific terms below (term + one-line definition + `_Avoid_` aliases
 
 | Term | Definition | Avoid |
 | --- | --- | --- |
-| _TBD_ | | |
+| 桌面歌词 (desktop lyric) | 独立的透明置顶 Electron 窗口（`src/desktopLyric/`），浮在其他应用之上显示当前一句逐字歌词。自成一个 webpack page 入口，不加载 Vuex——`store/index.js` 顶层就 `new Player()`，复用主入口会多出一个 Howler 实例。所有状态由主窗口经 ipcMain 单向推送。 | OSD 歌词、悬浮歌词 |
+| lyricProvider | `src/utils/lyricProvider.js`，歌词的唯一数据源：取词、解析、译文配对、行定位。歌词页与桌面歌词都只是它的消费者。 | 歌词 store |
+| 游戏模式 (game mode) | 把播放器降级成「只会放歌的内核」：界面整树替换成最小播放面板，封面预取 / 元数据落盘 / 统计脚本全部关闭。与桌面歌词完全正交。 | 省电模式、性能模式 |
 
 ## ADR
 

@@ -15,8 +15,12 @@ const MIN_HEIGHT = 90;
 const DEFAULT_HEIGHT = 170;
 // 默认占工作区宽度的比例，两侧留白让长歌词也不至于顶到屏幕边缘
 const DEFAULT_WIDTH_RATIO = 0.7;
-// 默认离工作区底部的距离，避开任务栏和大多数应用的状态栏
-const DEFAULT_BOTTOM_GAP = 120;
+// 离工作区底部的距离按比例算而不写死像素。workArea 与窗口 bounds 都是 DIP，
+// 一块 1080p 屏在 150% 缩放下只有约 680 DIP 高，固定 120px 的间距加上 170px
+// 的窗身就吃掉了 43% 的屏高，窗口会落在屏幕中部而不是底部。
+// 上下限只是防止超宽超窄的工作区把间距算到离谱的值上
+const DEFAULT_BOTTOM_GAP_RATIO = 0.06;
+const DEFAULT_BOTTOM_GAP_RANGE = [24, 90];
 const SAVE_BOUNDS_DELAY = 500;
 
 let win = null;
@@ -28,11 +32,16 @@ let hoverInteractive = false;
 function defaultBounds() {
   const { workArea } = screen.getPrimaryDisplay();
   const width = Math.round(workArea.width * DEFAULT_WIDTH_RATIO);
+  const [minGap, maxGap] = DEFAULT_BOTTOM_GAP_RANGE;
+  const gap = Math.min(
+    Math.max(Math.round(workArea.height * DEFAULT_BOTTOM_GAP_RATIO), minGap),
+    maxGap
+  );
   return {
     width,
     height: DEFAULT_HEIGHT,
     x: workArea.x + Math.round((workArea.width - width) / 2),
-    y: workArea.y + workArea.height - DEFAULT_HEIGHT - DEFAULT_BOTTOM_GAP,
+    y: workArea.y + workArea.height - DEFAULT_HEIGHT - gap,
   };
 }
 
@@ -118,12 +127,23 @@ export function setDesktopLyricBounds(store, patch) {
   const target = getDesktopLyricWindow();
   if (!target || !patch) return;
   const current = target.getBounds();
+  // 拖太宽会把窗口拉到屏幕外面去，宽度封顶在所在那块屏的工作区
+  const { workArea } = screen.getDisplayMatching(current);
+  const width = Math.min(
+    workArea.width,
+    Math.max(MIN_WIDTH, Math.round(patch.width ?? current.width))
+  );
   const next = {
     x: Math.round(patch.x ?? current.x),
     y: Math.round(patch.y ?? current.y),
-    width: Math.max(MIN_WIDTH, Math.round(patch.width ?? current.width)),
+    width,
     height: Math.max(MIN_HEIGHT, Math.round(patch.height ?? current.height)),
   };
+  // 拖左把手时右边缘必须钉住。宽度一旦被上下限截断，x 就得按截断后的宽度
+  // 回算，否则拖到最窄/最宽之后再继续拖，窗口会整个横着漂走
+  if (patch.x !== undefined && patch.width !== undefined) {
+    next.x = Math.round(patch.x + patch.width - width);
+  }
   target.setBounds(next);
   saveBounds(store);
 }

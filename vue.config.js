@@ -49,7 +49,8 @@ module.exports = {
       template: 'public/desktop-lyric.html',
       filename: 'desktop-lyric.html',
       title: 'YesPlayMusic Desktop Lyric',
-      chunks: ['chunk-vendors', 'chunk-common', 'desktopLyric'],
+      // 只留自己：共享的 vendors/common 已经被下面的 splitChunks 挡在门外了
+      chunks: ['desktopLyric'],
     },
   },
   chainWebpack(config) {
@@ -82,6 +83,36 @@ module.exports = {
       .loader('esbuild-loader')
       .options({ target: 'es2015', format: 'cjs' })
       .end();
+
+    // 桌面歌词窗口只需要 Vue + vue-i18n，却会因为 vue-cli 默认的
+    // vendors/common 分组跟主窗口共用同一个 600 KiB 出头的 chunk
+    // （axios / howler / dexie / plyr 全在里面，它一个都用不到）。
+    // 把 desktopLyric 从这两个分组里摘出去，它的依赖就留在自己的入口 chunk 里。
+    // 代价是 Vue 在两个入口各存一份——两个窗口本来就是各自独立的渲染进程，
+    // 共用 chunk 也省不下内存，只省磁盘，不值得为此背上整包依赖。
+    //
+    // chunks 传函数而非 'initial' 时要自己补上 canBeInitial()：
+    // webpack 4 的 'initial' 内部展开就是 chunk => chunk.canBeInitial()，
+    // 漏了它会把异步 chunk 里的依赖一起提到首屏。
+    const sharedChunks = chunk =>
+      chunk.canBeInitial() && chunk.name !== 'desktopLyric';
+    config.optimization.splitChunks({
+      cacheGroups: {
+        vendors: {
+          name: 'chunk-vendors',
+          test: /[\\/]node_modules[\\/]/,
+          priority: -10,
+          chunks: sharedChunks,
+        },
+        common: {
+          name: 'chunk-common',
+          minChunks: 2,
+          priority: -20,
+          chunks: sharedChunks,
+          reuseExistingChunk: true,
+        },
+      },
+    });
 
     // LimitChunkCountPlugin 可以通过合并块来对块进行后期处理。用以解决 chunk 包太多的问题
     // 上限跟着入口数走：单入口时是 index + chunk-vendors + chunk-common 三块，

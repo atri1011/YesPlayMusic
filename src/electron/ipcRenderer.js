@@ -2,6 +2,7 @@ import store from '@/store';
 import { toggleGameMode } from '@/utils/gameMode';
 import {
   setDesktopLyric,
+  stepDesktopLyricFontSize,
   toggleDesktopLyric,
   toggleDesktopLyricLock,
 } from '@/utils/desktopLyric';
@@ -104,6 +105,14 @@ export function ipcRenderer(vueInstance) {
 
   ipcRenderer.on('closeDesktopLyric', () => {
     setDesktopLyric(false);
+  });
+
+  ipcRenderer.on('desktopLyricFontSizeUp', () => {
+    stepDesktopLyricFontSize(1);
+  });
+
+  ipcRenderer.on('desktopLyricFontSizeDown', () => {
+    stepDesktopLyricFontSize(-1);
   });
 
   ipcRenderer.on('rememberCloseAppOption', (event, value) => {

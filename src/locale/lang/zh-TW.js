@@ -131,6 +131,7 @@ export default {
     pause: '暫停',
     mute: '靜音',
     nextUp: '播放清單',
+    desktopLyric: '桌面歌詞',
     translationLyric: '歌詞(譯)',
     PronunciationLyric: '歌詞(音)',
     comments: '歌曲評論',
@@ -153,6 +154,14 @@ export default {
     viewFloors: '查看回覆',
     floor: '條回覆',
     loadingComments: '載入評論中…',
+  },
+  // 桌面歌詞視窗自建 VueI18n 實例，只用得到這一塊
+  desktopLyric: {
+    lock: '鎖定（滑鼠穿透）',
+    unlock: '解鎖',
+    close: '關閉桌面歌詞',
+    fontSizeUp: '放大字級',
+    fontSizeDown: '縮小字級',
   },
   modal: {
     close: '關閉',
@@ -246,6 +255,13 @@ export default {
     },
     gameModeExit: '退出遊戲模式',
     gameModeHint: '按 Alt+Ctrl+G 或點擊工作列圖示選單也可以退出',
+    desktopLyric: {
+      text: '桌面歌詞',
+      description:
+        '把目前這句浮在其他視窗之上。Alt+Ctrl+D 開關，Alt+Ctrl+K 鎖定後滑鼠穿透。獨佔全螢幕的遊戲蓋不住。',
+      translation: '桌面歌詞顯示翻譯',
+      fontSize: '桌面歌詞字級',
+    },
     enableCustomTitlebar: '啟用自訂標題列（重新啟動後生效）',
     showLyricsTime: '顯示目前時間',
     lyricsBackground: {

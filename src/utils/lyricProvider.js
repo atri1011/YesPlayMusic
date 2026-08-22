@@ -9,6 +9,7 @@ import {
   parseYrc,
 } from '@/utils/lyrics';
 import { isGameMode } from '@/utils/gameMode';
+import { coverColorState } from '@/utils/coverColor';
 
 /**
  * 歌词的唯一数据源。
@@ -86,8 +87,8 @@ export const lyricGetters = new Vue({
      * 下发给桌面歌词窗口的整份状态。
      *
      * 做成 computed 是刻意的：它的依赖恰好是「当前行 / 行内基准 / 播放状态 /
-     * 当前歌曲」，所以它重算的时机就是该推 IPC 的时机，桥接层一个 $watch 就够，
-     * 不需要额外的发布订阅。
+     * 当前歌曲 / 封面主色」，所以它重算的时机就是该推 IPC 的时机，桥接层一个
+     * $watch 就够，不需要额外的发布订阅。
      */
     desktopLyricPayload() {
       const player = store.state.player;
@@ -109,6 +110,10 @@ export const lyricGetters = new Vue({
         translation: line?.contents?.[1] ?? '',
         words: line?.words ?? null,
         nextContent: next?.content ?? '',
+        // 只传 H/S 不传 L：明度由窗口那侧的 CSS 定死，跟歌词页一样。
+        // 取色失败、封面是灰度、或游戏模式下压根没取色时是 null，窗口退回固定色
+        accentHue: coverColorState.desktopAccentHue,
+        accentSaturation: coverColorState.desktopAccentSaturation,
       };
     },
   },

@@ -425,6 +425,8 @@ export function initIpcMain(win, store, trayEventEmitter) {
       previous: 'previous',
       lock: 'toggleDesktopLyricLock',
       close: 'closeDesktopLyric',
+      fontSizeUp: 'desktopLyricFontSizeUp',
+      fontSizeDown: 'desktopLyricFontSizeDown',
     }[action];
     if (channel) win.webContents.send(channel);
   });

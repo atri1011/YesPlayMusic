@@ -135,6 +135,7 @@ export default {
     pause: '暂停',
     mute: '静音',
     nextUp: '播放列表',
+    desktopLyric: '桌面歌词',
     translationLyric: '歌词(译)',
     PronunciationLyric: '歌词(音)',
     comments: '歌曲评论',
@@ -157,6 +158,14 @@ export default {
     viewFloors: '查看回复',
     floor: '条回复',
     loadingComments: '加载评论中…',
+  },
+  // 桌面歌词窗口自建 VueI18n 实例，只用得到这一块
+  desktopLyric: {
+    lock: '锁定（鼠标穿透）',
+    unlock: '解锁',
+    close: '关闭桌面歌词',
+    fontSizeUp: '增大字号',
+    fontSizeDown: '减小字号',
   },
   modal: {
     close: '关闭',
@@ -249,6 +258,13 @@ export default {
     },
     gameModeExit: '退出游戏模式',
     gameModeHint: '按 Alt+Ctrl+G 或点击托盘菜单也可以退出',
+    desktopLyric: {
+      text: '桌面歌词',
+      description:
+        '把当前这句浮在其他窗口之上。Alt+Ctrl+D 开关，Alt+Ctrl+K 锁定后鼠标穿透。独占全屏的游戏盖不住。',
+      translation: '桌面歌词显示翻译',
+      fontSize: '桌面歌词字号',
+    },
     enableCustomTitlebar: '启用自定义标题栏 (重启后生效)',
     lyricsBackground: {
       text: '显示歌词背景',

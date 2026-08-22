@@ -2,7 +2,7 @@
   <div
     class="desktop-lyric"
     :class="{ locked, paused: !payload.playing }"
-    :style="rootStyle"
+    :style="accentStyle"
   >
     <!-- 热区不能放进 app-region: drag 的区域里：拖动区在 Windows 上会吞掉
          mousemove，锁定态下就再也收不到悬停事件，解锁按钮永远浮不出来 -->
@@ -13,24 +13,56 @@
     >
       <transition name="fade">
         <div v-show="hovering" class="toolbar">
-          <button class="tool" @click="control('previous')">
+          <button
+            class="tool"
+            :title="$t('player.previous')"
+            @click="control('previous')"
+          >
             <svg-icon icon-class="previous" />
           </button>
-          <button class="tool" @click="control('play')">
+          <button
+            class="tool"
+            :title="payload.playing ? $t('player.pause') : $t('player.play')"
+            @click="control('play')"
+          >
             <svg-icon :icon-class="payload.playing ? 'pause' : 'play'" />
           </button>
-          <button class="tool" @click="control('next')">
+          <button
+            class="tool"
+            :title="$t('player.next')"
+            @click="control('next')"
+          >
             <svg-icon icon-class="next" />
           </button>
           <span class="divider"></span>
           <button
+            class="tool label"
+            :title="$t('desktopLyric.fontSizeDown')"
+            @click="control('fontSizeDown')"
+            >A-</button
+          >
+          <button
+            class="tool label"
+            :title="$t('desktopLyric.fontSizeUp')"
+            @click="control('fontSizeUp')"
+            >A+</button
+          >
+          <span class="divider"></span>
+          <button
             class="tool"
             :class="{ active: locked }"
+            :title="
+              locked ? $t('desktopLyric.unlock') : $t('desktopLyric.lock')
+            "
             @click="control('lock')"
           >
-            <svg-icon icon-class="lock" />
+            <svg-icon :icon-class="locked ? 'lock' : 'lock-open'" />
           </button>
-          <button class="tool" @click="control('close')">
+          <button
+            class="tool"
+            :title="$t('desktopLyric.close')"
+            @click="control('close')"
+          >
             <svg-icon icon-class="x" />
           </button>
         </div>
@@ -74,16 +106,41 @@
     </div>
 
     <!-- transparent 窗口不能用原生 resize（Electron 官方限制），
-         左右两条把手自己算新 bounds 让主进程整块换掉 -->
-    <div class="resize-handle left" @mousedown="startResize($event, 'left')" />
-    <div
-      class="resize-handle right"
-      @mousedown="startResize($event, 'right')"
-    />
+         左右两条把手自己算新 bounds 让主进程整块换掉。
+         锁定时整个摘掉而不只是改光标：悬停热区会让主进程临时恢复整窗可点，
+         把手横跨全高，那一刻正好能在顶部两角被抓到 -->
+    <template v-if="!locked">
+      <div
+        v-for="edge in ['left', 'right']"
+        :key="edge"
+        class="resize-handle"
+        :class="[edge, { visible: hovering }]"
+        @pointerdown="startResize($event, edge)"
+        @pointermove="onResizeMove"
+        @pointerup="stopResize"
+        @pointercancel="stopResize"
+        @lostpointercapture="stopResize"
+      >
+        <span class="grip"></span>
+      </div>
+    </template>
   </div>
 </template>
 
 <script>
+import SvgIcon from '@/components/SvgIcon';
+import { normalizeLocale } from './i18n';
+
+// 图标逐个 import，不走 @/assets/icons：那个模块用 require.context 把 47 个
+// 图标一并塞进 sprite，将近 100 KiB，而这个窗口只用得到下面这 7 个
+import '@/assets/icons/previous.svg';
+import '@/assets/icons/play.svg';
+import '@/assets/icons/pause.svg';
+import '@/assets/icons/next.svg';
+import '@/assets/icons/lock.svg';
+import '@/assets/icons/lock-open.svg';
+import '@/assets/icons/x.svg';
+
 const { ipcRenderer } = window.require('electron');
 
 // 扫过时长直接取该字的真实时长，只保底不封顶：长拖腔就该慢慢扫过去。
@@ -91,7 +148,7 @@ const { ipcRenderer } = window.require('electron');
 const WORD_SWEEP_MIN_MS = 60;
 // 辉光在字唱完之后继续淡出的时间（毫秒）
 const WORD_GLOW_TAIL_MS = 260;
-const MIN_WIDTH = 320;
+const DEFAULT_FONT_SIZE = 30;
 
 const emptyPayload = () => ({
   trackId: 0,
@@ -103,18 +160,22 @@ const emptyPayload = () => ({
   translation: '',
   words: null,
   nextContent: '',
+  accentHue: null,
+  accentSaturation: null,
 });
 
 export default {
   name: 'DesktopLyric',
+  components: {
+    SvgIcon,
+  },
   data() {
     return {
       payload: emptyPayload(),
       locked: false,
       hovering: false,
-      fontSize: 30,
+      fontSize: DEFAULT_FONT_SIZE,
       showTranslation: true,
-      resizing: null,
     };
   },
   computed: {
@@ -136,13 +197,22 @@ export default {
         ? `${this.payload.trackName} — ${this.payload.artistName}`
         : this.payload.trackName;
     },
-    rootStyle() {
+    /**
+     * 高亮色的 H/S 跟着封面走。取色失败、封面是灰度、或游戏模式下压根没取色时
+     * 主窗口推的是 null，这里就不覆盖，SCSS 里的兜底主题蓝生效。
+     */
+    accentStyle() {
+      if (this.payload.accentHue === null) return {};
       return {
-        '--dl-font-size': `${this.fontSize}px`,
+        '--dl-accent-h': this.payload.accentHue,
+        '--dl-accent-s': `${this.payload.accentSaturation}%`,
       };
     },
   },
   created() {
+    // 拖动状态刻意不放进 data：它每帧都要写 frame，而且没有任何模板读它，
+    // 做成响应式只会白白触发重渲染
+    this.resizing = null;
     this.readLocalSettings();
     ipcRenderer.on('desktopLyric:update', this.onUpdate);
     ipcRenderer.on('desktopLyric:lock', this.onLock);
@@ -168,8 +238,12 @@ export default {
     },
     onSettings(settings) {
       if (!settings) return;
-      this.showTranslation = settings.showLyricsTranslation !== false;
+      // 译文与字号都是桌面歌词自己的设置项，不跟歌词页共用：一个是浮在别人
+      // 界面上的一两行，一个是占满整屏的滚动列表
+      this.showTranslation = settings.desktopLyricTranslation !== false;
+      this.fontSize = settings.desktopLyricFontSize || DEFAULT_FONT_SIZE;
       this.locked = settings.desktopLyricLocked === true;
+      this.$i18n.locale = normalizeLocale(settings.lang);
     },
     onUpdate(_, payload) {
       this.payload = { ...emptyPayload(), ...payload };
@@ -199,6 +273,11 @@ export default {
     },
     startResize(event, edge) {
       event.preventDefault();
+      // 指针捕获而不是往 window 上挂 mousemove：窗口是等 IPC 回来才变宽的，
+      // 稍微拖快一点光标就跑到窗口外面去了，那之后 mousemove / mouseup
+      // 事件全都收不到——拖动僵在半路，listener 也留着不清。捕获之后这一串
+      // 事件无论光标去了哪儿都只发给这个把手，抬手还会自动释放
+      event.currentTarget.setPointerCapture(event.pointerId);
       this.resizing = {
         edge,
         startScreenX: event.screenX,
@@ -206,22 +285,19 @@ export default {
         startWidth: window.outerWidth,
         frame: null,
       };
-      window.addEventListener('mousemove', this.onResizeMove);
-      window.addEventListener('mouseup', this.stopResize);
     },
     onResizeMove(event) {
       const state = this.resizing;
       if (!state) return;
       const delta = event.screenX - state.startScreenX;
+      // 左把手要同时改 x 和 width；宽度被上下限截断时右边缘怎么钉住
+      // 由主进程回算，这里只管把「本来想要的」那一组值送过去
       const patch =
         state.edge === 'left'
-          ? {
-              x: state.startX + Math.min(delta, state.startWidth - MIN_WIDTH),
-              width: state.startWidth - delta,
-            }
+          ? { x: state.startX + delta, width: state.startWidth - delta }
           : { width: state.startWidth + delta };
 
-      // 鼠标事件比窗口重绘密集得多，逐个 setBounds 会把主进程刷爆
+      // 指针事件比窗口重绘密集得多，逐个 setBounds 会把主进程刷爆
       if (state.frame !== null) cancelAnimationFrame(state.frame);
       state.frame = requestAnimationFrame(() => {
         state.frame = null;
@@ -229,11 +305,8 @@ export default {
       });
     },
     stopResize() {
-      window.removeEventListener('mousemove', this.onResizeMove);
-      window.removeEventListener('mouseup', this.stopResize);
-      if (this.resizing?.frame !== null && this.resizing?.frame !== undefined) {
-        cancelAnimationFrame(this.resizing.frame);
-      }
+      const state = this.resizing;
+      if (state?.frame != null) cancelAnimationFrame(state.frame);
       this.resizing = null;
     },
   },
@@ -241,16 +314,17 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-// 高亮色暂时写死；跟封面主色走要等取色逻辑从 lyrics.vue 里搬出来
-$accent-h: 226;
-$accent-s: 90%;
-$accent-l: 68%;
-
 .desktop-lyric {
-  --dl-accent-h: #{$accent-h};
-  --dl-accent-s: #{$accent-s};
-  --dl-accent-l: #{$accent-l};
-  --dl-accent: hsl(var(--dl-accent-h), var(--dl-accent-s), var(--dl-accent-l));
+  // 高亮色的 H/S 由封面取色随 payload 覆盖到这一层，兜底值取
+  // --color-primary(#335eea) 的 H/S。L 只在 CSS 里定死：窗口永远浮在
+  // 未知底色上，靠描边保证可读性，不像歌词页那样有深浅主题之分。
+  //
+  // 三个分量只各自声明、不在本层合成成一个 hsl()：自定义属性的 var() 是在
+  // 「声明所在元素」上就地替换的，在这层合成会把兜底蓝烧死成字面量，
+  // 内联样式覆盖 H/S 也追不回来。合成放到真正用色的地方
+  --dl-accent-h: 226;
+  --dl-accent-s: 90%;
+  --dl-accent-l: 68%;
 
   position: relative;
   display: flex;
@@ -303,13 +377,21 @@ $accent-l: 68%;
     height: 14px;
   }
 
+  // A- / A+ 用文字而不是图标：字号调节没有哪个通用图标一眼能看懂
+  &.label {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
   &:hover {
     background: rgba(255, 255, 255, 0.14);
     color: #fff;
   }
 
   &.active {
-    color: var(--dl-accent);
+    color: hsl(var(--dl-accent-h), var(--dl-accent-s), var(--dl-accent-l));
   }
 }
 
@@ -369,8 +451,9 @@ $accent-l: 68%;
   // 图总宽 2w + f，则 50% ∓ 0.2em 正好是已唱区右端与未唱区左端
   background-image: linear-gradient(
     to right,
-    var(--dl-accent) 0,
-    var(--dl-accent) calc(50% - 0.2em),
+    hsl(var(--dl-accent-h), var(--dl-accent-s), var(--dl-accent-l)) 0,
+    hsl(var(--dl-accent-h), var(--dl-accent-s), var(--dl-accent-l))
+      calc(50% - 0.2em),
     #fff calc(50% + 0.2em),
     #fff 100%
   );
@@ -407,7 +490,12 @@ $accent-l: 68%;
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 8px;
+  // 14px 是上限：再宽就压到 .stage 的 18px 内边距上，
+  // 而 .stage 是 app-region: drag，重叠了会跟拖动区抢事件
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: ew-resize;
   -webkit-app-region: no-drag;
 
@@ -420,9 +508,32 @@ $accent-l: 68%;
   }
 }
 
-.desktop-lyric.locked .resize-handle {
-  // 锁定时整窗穿透，把手留着也点不到，去掉光标避免误导
-  cursor: default;
+// 窗口本身是全透明的，把手再不给视觉线索就等于不存在——只有 cursor 会变，
+// 而那得先蒙对位置。跟工具条同一个时机浮出来：鼠标一进顶部热区，
+// 两侧抓手一起显形，用户就知道该抓哪儿
+.grip {
+  width: 4px;
+  height: 26px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+
+.resize-handle.visible .grip,
+.resize-handle:hover .grip {
+  opacity: 1;
+}
+
+.resize-handle:hover .grip {
+  background: #fff;
+}
+
+// 锁定时不能拖动窗口。悬停热区会让主进程临时恢复整窗可点，
+// 这时鼠标只要滑到歌词上就能把「锁着的」窗口拖走
+.desktop-lyric.locked .stage {
+  -webkit-app-region: no-drag;
 }
 
 .fade-enter-active,

@@ -111,6 +111,13 @@
         <div class="blank"></div>
         <div class="container" @click.stop>
           <button-icon
+            v-if="isElectron"
+            :title="$t('player.desktopLyric')"
+            :class="{ active: settings.showDesktopLyric }"
+            @click.native="toggleDesktopLyric"
+            ><svg-icon icon-class="desktop-lyric"
+          /></button-icon>
+          <button-icon
             :title="$t('player.nextUp')"
             :class="{
               active: $route.name === 'next',
@@ -197,6 +204,7 @@ import ButtonIcon from '@/components/ButtonIcon.vue';
 import VueSlider from 'vue-slider-component';
 import { goToListSource, hasListSource } from '@/utils/playList';
 import { formatTrackTime } from '@/utils/common';
+import { toggleDesktopLyric } from '@/utils/desktopLyric';
 
 export default {
   name: 'Player',
@@ -230,6 +238,10 @@ export default {
         ? '音源来自酷我音乐'
         : '';
     },
+    // 桌面歌词整个是一个原生窗口，网页版没有
+    isElectron() {
+      return process.env.IS_ELECTRON === true;
+    },
   },
   mounted() {
     this.setupMediaControls();
@@ -241,6 +253,7 @@ export default {
   methods: {
     ...mapMutations(['toggleLyrics', 'updateModal']),
     ...mapActions(['showToast', 'likeATrack']),
+    toggleDesktopLyric,
     handleClick(event) {
       if (event.target == this.mouseDownTarget) {
         this.toggleLyrics();

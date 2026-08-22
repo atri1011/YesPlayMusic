@@ -134,6 +134,7 @@ export default {
     pause: 'Pause',
     mute: 'Mute',
     nextUp: 'Next Up',
+    desktopLyric: 'Desktop Lyrics',
     translationLyric: 'lyric (trans)',
     PronunciationLyric: 'lyric (pronounce)',
     comments: 'Track Comments',
@@ -156,6 +157,14 @@ export default {
     viewFloors: 'View Replies',
     floor: 'replies',
     loadingComments: 'Loading comments…',
+  },
+  // 桌面歌词窗口自建 VueI18n 实例，只用得到这一块
+  desktopLyric: {
+    lock: 'Lock (clicks pass through)',
+    unlock: 'Unlock',
+    close: 'Close Desktop Lyrics',
+    fontSizeUp: 'Larger Text',
+    fontSizeDown: 'Smaller Text',
   },
   modal: {
     close: 'Close',
@@ -249,6 +258,13 @@ export default {
     },
     gameModeExit: 'Exit Game Mode',
     gameModeHint: 'Alt+Ctrl+G or the tray menu also exits',
+    desktopLyric: {
+      text: 'Desktop Lyrics',
+      description:
+        'Float the current line above other windows. Alt+Ctrl+D toggles it, Alt+Ctrl+K locks it in place so clicks pass through. Exclusive-fullscreen games cannot be covered.',
+      translation: 'Show translation on desktop lyrics',
+      fontSize: 'Desktop lyrics font size',
+    },
     enableCustomTitlebar: 'Enable custom title bar (Need restart)',
     showLyricsTime: 'Display current time',
     lyricsBackground: {

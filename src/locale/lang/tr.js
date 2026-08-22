@@ -130,6 +130,7 @@ export default {
     pause: 'Durdur',
     mute: 'Sesi kapat',
     nextUp: 'Sıradaki',
+    desktopLyric: 'Masaüstü Şarkı Sözleri',
     translationLyric: 'şarkı sözleri (çeviri)',
     PronunciationLyric: 'şarkı sözleri (çeviri)',
     comments: 'Şarkı Yorumları',
@@ -152,6 +153,14 @@ export default {
     viewFloors: 'Yanıtları Gör',
     floor: 'yanıt',
     loadingComments: 'Yorumlar yükleniyor…',
+  },
+  // 桌面歌词窗口自建 VueI18n 实例，只用得到这一块
+  desktopLyric: {
+    lock: 'Kilitle (tıklamalar alta geçer)',
+    unlock: 'Kilidi aç',
+    close: 'Masaüstü şarkı sözlerini kapat',
+    fontSizeUp: 'Yazıyı büyüt',
+    fontSizeDown: 'Yazıyı küçült',
   },
   modal: {
     close: 'Kapat',
@@ -245,6 +254,13 @@ export default {
     },
     gameModeExit: 'Oyun Modundan Çık',
     gameModeHint: 'Alt+Ctrl+G veya tepsi menüsü de çıkış yapar',
+    desktopLyric: {
+      text: 'Masaüstü Şarkı Sözleri',
+      description:
+        'Geçerli satırı diğer pencerelerin üzerinde gösterir. Alt+Ctrl+D açıp kapatır, Alt+Ctrl+K sabitler ve tıklamalar alta geçer. Tam ekran oyunların üzerine çıkamaz.',
+      translation: 'Masaüstü şarkı sözlerinde çeviriyi göster',
+      fontSize: 'Masaüstü şarkı sözleri yazı boyutu',
+    },
     enableCustomTitlebar: 'Enable custom title bar (Need restart)',
     lyricsBackground: {
       text: 'Şarkı Sözleri Arka Planını Göster',

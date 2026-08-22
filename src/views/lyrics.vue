@@ -325,8 +325,7 @@ import {
   switchLyricType,
 } from '@/utils/lyricProvider';
 import ButtonIcon from '@/components/ButtonIcon.vue';
-import * as Vibrant from 'node-vibrant/dist/vibrant.worker.min.js';
-import Color from 'color';
+import { coverColorState } from '@/utils/coverColor';
 import { isAccountLoggedIn } from '@/utils/auth';
 import { hasListSource, getListSourcePath } from '@/utils/playList';
 import locale from '@/locale';
@@ -336,11 +335,6 @@ import locale from '@/locale';
 const WORD_SWEEP_MIN_MS = 60;
 // 辉光在字唱完之后继续淡出的时间（毫秒）
 const WORD_GLOW_TAIL_MS = 260;
-// 取色饱和度低于此值的封面（黑白/单色）取出来的 hue 是噪声，换下一个候选
-const ACCENT_MIN_SATURATION = 12;
-// 下限 55 是硬约束而非审美：高亮色只有色相跟着背景走，明度又被提到 74%，
-// 再不留住饱和度就会和接近纯白的未唱文字糊成一片，扫过的边界直接消失
-const ACCENT_SATURATION_RANGE = [55, 85];
 
 export default {
   name: 'Lyrics',
@@ -352,14 +346,6 @@ export default {
   data() {
     return {
       minimize: true,
-      background: '',
-      // 逐字高亮色的 H/S 分量，下发给 CSS。
-      // 只传 H/S、不传 L，是为了让 CSS 按当前主题深浅自行决定亮度；
-      // 取色失败或封面是灰度时置 null，回退到 CSS 里的兜底值
-      accentHue: null,
-      accentSaturation: null,
-      // 已经取过色的歌曲 id，避免反复开关歌词页时对同一首重复取色
-      coverColorTrackId: null,
       date: this.formatTime(new Date()),
       isFullscreen: !!document.fullscreenElement,
       rightClickLyric: null,
@@ -410,13 +396,18 @@ export default {
     isShowLyricTypeSwitch() {
       return this.activeRomalyric.length > 0 && this.activeTlyric.length > 0;
     },
+    // 封面取色归 coverColor 管，这里只读不写：桌面歌词是第二个消费者，
+    // 而 Vibrant 跑一次要下载并解码整张封面，两边各跑一次纯属浪费
+    background() {
+      return coverColorState.background;
+    },
     lyricContainerStyle() {
       const style = {
         fontSize: `${this.$store.state.settings.lyricFontSize || 28}px`,
       };
-      if (this.accentHue !== null) {
-        style['--lyric-accent-h'] = this.accentHue;
-        style['--lyric-accent-s'] = `${this.accentSaturation}%`;
+      if (coverColorState.accentHue !== null) {
+        style['--lyric-accent-h'] = coverColorState.accentHue;
+        style['--lyric-accent-s'] = `${coverColorState.accentSaturation}%`;
       }
       return style;
     },
@@ -436,9 +427,6 @@ export default {
     },
   },
   watch: {
-    currentTrack() {
-      this.getCoverColor();
-    },
     highlightLyricIndex() {
       // 滚动是纯视图行为，留在这里；行定位本身在 lyricProvider 里
       if (!this.showLyrics) return;
@@ -446,23 +434,10 @@ export default {
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     },
     showLyrics(show) {
-      if (show) {
-        // 关着的时候切歌不会取色，打开时补上
-        this.getCoverColor();
-        this.$store.commit('enableScrolling', false);
-      } else {
-        this.$store.commit('enableScrolling', true);
-      }
-    },
-    'settings.lyricsBackground'() {
-      // 这个开关决定高亮色跟背景走还是跟 Vibrant 走，切换后同一首歌也得重取，
-      // 否则要等到下一次切歌才生效
-      this.coverColorTrackId = null;
-      this.getCoverColor();
+      this.$store.commit('enableScrolling', !show);
     },
   },
   created() {
-    this.getCoverColor();
     this.initDate();
     document.addEventListener('keydown', e => {
       if (e.key === 'F11') {
@@ -606,63 +581,6 @@ export default {
     },
     switchShuffle() {
       this.player.switchShuffle();
-    },
-    getCoverColor() {
-      if (!this.currentTrack.al?.picUrl) return;
-      // 歌词页是 v-show 常驻的，取色却只有它可见（或开了歌词背景）时才有人用。
-      // 关着的时候跳过，等真正打开时再补算，免得每次切歌都白跑一趟 Vibrant
-      if (!this.showLyrics && this.settings.lyricsBackground !== true) return;
-      if (this.coverColorTrackId === this.currentTrack.id) return;
-      this.coverColorTrackId = this.currentTrack.id;
-      const cover = this.currentTrack.al.picUrl + '?param=256y256';
-      Vibrant.from(cover, { colorCount: 1 })
-        .getPalette()
-        .then(palette => {
-          // 高亮色与歌词背景共用这一次取色。开关只改高亮的取色来源
-          // （见 setAccentColor），不决定高亮要不要上色：
-          // 背景是可选项，高亮色只要歌词页开着就得跟着封面走
-          this.setAccentColor(palette);
-          if (this.settings.lyricsBackground !== true) return;
-          if (!palette.DarkMuted?._rgb) return;
-          const originColor = Color.rgb(palette.DarkMuted._rgb);
-          const color = originColor.darken(0.1).rgb().string();
-          const color2 = originColor.lighten(0.28).rotate(-30).rgb().string();
-          this.background = `linear-gradient(to top left, ${color}, ${color2})`;
-        })
-        // 封面下载失败或解码失败时 Vibrant 会 reject
-        .catch(() => {
-          // 清掉标记，下次打开歌词页可以重试（可能只是临时的网络失败）
-          this.coverColorTrackId = null;
-          this.accentHue = null;
-        });
-    },
-    /**
-     * 挑一个色相作为逐字高亮色。
-     * 开着歌词背景时跟背景取同一支色卡（DarkMuted），高亮就成了背景色的
-     * 提亮版、和整屏同属一个色系；关着时页面是纯色 body 背景、无背景可跟，
-     * 改用 Vibrant 保住封面辨识度。
-     * 全部候选都太灰就置 null，让 CSS 的兜底值（主题蓝）生效。
-     */
-    setAccentColor(palette) {
-      // 首选太灰（黑白封面的 DarkMuted 常常如此）时按顺位下探，
-      // 而不是直接放弃——封面里往往还有别的色卡能救
-      const candidates =
-        this.settings.lyricsBackground === true
-          ? [palette.DarkMuted, palette.Vibrant, palette.LightVibrant]
-          : [palette.Vibrant, palette.LightVibrant, palette.Muted];
-      const color = candidates
-        .filter(swatch => swatch?._rgb)
-        .map(swatch => Color.rgb(swatch._rgb))
-        .find(c => c.saturationl() >= ACCENT_MIN_SATURATION);
-      if (!color) {
-        this.accentHue = null;
-        return;
-      }
-      const [min, max] = ACCENT_SATURATION_RANGE;
-      this.accentHue = Math.round(color.hue());
-      this.accentSaturation = Math.round(
-        Math.min(Math.max(color.saturationl(), min), max)
-      );
     },
     hasList() {
       return hasListSource();

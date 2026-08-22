@@ -373,6 +373,64 @@
         </div>
       </div>
 
+      <!-- 桌面歌词只有 Electron 才有：它整个是一个透明置顶的原生窗口 -->
+      <template v-if="isElectron">
+        <h3>{{ $t('settings.desktopLyric.text') }}</h3>
+        <div class="item">
+          <div class="left">
+            <div class="title">{{ $t('settings.desktopLyric.text') }}</div>
+            <div class="description">{{
+              $t('settings.desktopLyric.description')
+            }}</div>
+          </div>
+          <div class="right">
+            <div class="toggle">
+              <input
+                id="show-desktop-lyric"
+                v-model="showDesktopLyric"
+                type="checkbox"
+                name="show-desktop-lyric"
+              />
+              <label for="show-desktop-lyric"></label>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="left">
+            <div class="title">{{
+              $t('settings.desktopLyric.translation')
+            }}</div>
+          </div>
+          <div class="right">
+            <div class="toggle">
+              <input
+                id="desktop-lyric-translation"
+                v-model="desktopLyricTranslation"
+                type="checkbox"
+                name="desktop-lyric-translation"
+              />
+              <label for="desktop-lyric-translation"></label>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="left">
+            <div class="title">{{ $t('settings.desktopLyric.fontSize') }}</div>
+          </div>
+          <div class="right">
+            <select v-model.number="desktopLyricFontSize">
+              <option
+                v-for="size in desktopLyricFontSizes"
+                :key="size"
+                :value="size"
+              >
+                {{ size }}px
+              </option>
+            </select>
+          </div>
+        </div>
+      </template>
+
       <section v-if="isElectron" class="unm-configuration">
         <h3>UnblockNeteaseMusic</h3>
         <div class="item">
@@ -905,6 +963,7 @@ import {
   bytesToSize,
 } from '@/utils/common';
 import { countDBSize, clearDB } from '@/utils/db';
+import { DESKTOP_LYRIC_FONT_SIZES } from '@/utils/desktopLyric';
 import pkg from '../../package.json';
 
 const electron =
@@ -1222,6 +1281,43 @@ export default {
       set(value) {
         this.$store.commit('updateSettings', {
           key: 'enableOsdlyricsSupport',
+          value,
+        });
+      },
+    },
+    desktopLyricFontSizes() {
+      return DESKTOP_LYRIC_FONT_SIZES;
+    },
+    showDesktopLyric: {
+      get() {
+        return this.settings.showDesktopLyric === true;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', {
+          key: 'showDesktopLyric',
+          value,
+        });
+      },
+    },
+    desktopLyricTranslation: {
+      get() {
+        // 老版本 localStorage 里没有这个键，缺省视为开启
+        return this.settings.desktopLyricTranslation !== false;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', {
+          key: 'desktopLyricTranslation',
+          value,
+        });
+      },
+    },
+    desktopLyricFontSize: {
+      get() {
+        return this.settings.desktopLyricFontSize || 30;
+      },
+      set(value) {
+        this.$store.commit('updateSettings', {
+          key: 'desktopLyricFontSize',
           value,
         });
       },
